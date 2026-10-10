@@ -15,6 +15,10 @@ Stack: Next.js 15 (App Router, server actions) · React 19 · SQLite integrato i
 | **Analytics** | Report giornaliero Instagram (visualizzazioni, account raggiunti, follower, interazioni, salvataggi, condivisioni), TikTok (visualizzazioni, follower, interazioni, condivisioni, commenti) e sito (visitatori unici, sessioni, tasso di interazione, clic da GA4, candidature). Confronto col giorno prima e trend a 30 giorni. Inserimento manuale per le sorgenti non collegate. |
 | **Consigli & Insights** | Bacheca condivisa: categorie, note fissate in alto, scadenze, "fatto", autore. |
 
+## Windows
+
+Guida passo-passo a costo zero (PC dello studio + Tailscale): **[GUIDA-WINDOWS.md](GUIDA-WINDOWS.md)**.
+
 ## Avvio rapido
 
 ```bash
