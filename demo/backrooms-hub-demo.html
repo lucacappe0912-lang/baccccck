@@ -384,6 +384,36 @@ details.disclosure[open] > summary .chev { transform: rotate(90deg); }
   .stat .value { font-size: clamp(15px, 4.4vw, 22px); white-space: nowrap; }
 }
 
+/* ─── Agenda ──────────────────────────────────────────────────────────────── */
+:root { --room-1: #3987e5; --room-2: #9085e9; --room-3: #d95926; --room-4: #c98500; --hour-h: 44px; }
+.week-scroll { overflow-x: auto; }
+.week { display: grid; grid-template-columns: 52px repeat(var(--days), minmax(118px, 1fr)); min-width: calc(52px + var(--days) * 118px); }
+.week-head { padding: 10px 8px; font-size: 12.5px; font-weight: 600; color: var(--text-2); border-bottom: 1px solid var(--hairline); text-align: center; }
+.week-head.today { color: var(--text); }
+.week-head.today span { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--chrome-soft); color: #0b0b0c; }
+.hours-col { position: relative; }
+.hours-col div { height: var(--hour-h); font-size: 11px; color: var(--text-3); text-align: right; padding-right: 8px; transform: translateY(-7px); font-variant-numeric: tabular-nums; }
+.day-col { position: relative; border-left: 1px solid var(--hairline); background-image: linear-gradient(var(--hairline) 1px, transparent 1px); background-size: 100% var(--hour-h); }
+.day-col.closed { background-color: rgba(255,255,255,.02); }
+.slot {
+  position: absolute; left: 3px; right: 3px; border-radius: 8px; padding: 5px 7px; overflow: hidden; font-size: 11.5px; line-height: 1.3;
+  background: color-mix(in srgb, var(--c) 22%, #101014); box-shadow: inset 3px 0 0 var(--c), 0 0 0 1px color-mix(in srgb, var(--c) 40%, transparent) inset; color: var(--text);
+}
+.slot b { font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slot .t { color: var(--text-2); font-variant-numeric: tabular-nums; }
+.slot.done { background: color-mix(in srgb, var(--c) 40%, #101014); }
+.slot.cancelled { opacity: .45; background: repeating-linear-gradient(135deg, rgba(255,255,255,.04) 0 6px, transparent 6px 12px); }
+.heat { display: grid; gap: 3px; font-size: 11px; color: var(--text-3); }
+.heat .cell { height: 22px; border-radius: 4px; background: rgba(57,135,229,var(--a)); box-shadow: 0 0 0 1px var(--hairline) inset; }
+.heat .lbl { display: flex; align-items: center; font-variant-numeric: tabular-nums; }
+.legend-ramp { display: inline-block; width: 90px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, rgba(57,135,229,.05), rgba(57,135,229,1)); vertical-align: middle; margin: 0 6px; }
+
+/* ─── Track pipeline ──────────────────────────────────────────────────────── */
+.stages { display: flex; gap: 3px; }
+.stages i { flex: 1; height: 5px; border-radius: 3px; background: rgba(255,255,255,.08); }
+.stages i.on { background: var(--chrome-soft); }
+.track-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.03); box-shadow: 0 0 0 1px var(--hairline) inset; }
+
 /* demo-only adjustments */
 .topbar { top: env(safe-area-inset-top, 0px); }
 .demo-ribbon { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; padding: 7px 16px; font-size: 12.5px; color: var(--text-2); background: linear-gradient(90deg, rgba(255,214,10,.08), rgba(255,214,10,.02)); border-bottom: 1px solid rgba(255,214,10,.18); }
@@ -470,25 +500,75 @@ function makeData() {
   }
 
   const leads = [
-    ["Nova Kid", "nova.kid@example.com", "+39 333 120 4455", "novakid", "Trap", "Cerca un EP da 5 tracce entro marzo", "drive", "nuovo"],
-    ["Lara V", "lara.v@example.com", "", "laravmusic", "R&B", "Vuole sessioni vocali settimanali", "sito", "contattato"],
-    ["Gemma Rossi", "gemma@example.com", "+39 347 880 1200", "", "Pop", "Singolo + videoclip, budget 900 €", "manuale", "in trattativa"],
-    ["Sabbia", "sabbia.band@example.com", "", "sabbiaband", "Indie", "Band di 4, registrazione live", "drive", "nuovo"],
-    ["Rocco Beats", "rocco@example.com", "", "roccobeats", "Hip hop", "Ha chiesto il listino beat", "sito", "perso"],
-  ].map(([name, email, phone, ig, genre, notes, source, status]) => ({ id: uid++, name, email, phone, ig, genre, notes, source, status, created: addDays(TODAY, -Math.floor(rand() * 40)) }));
+    ["Nova Kid", "nova.kid@example.com", "+39 333 120 4455", "novakid", "Trap", "Cerca un EP da 5 tracce entro marzo", "drive", "nuovo", "Instagram", "Plugghe", "Chiamare per il preventivo EP", -1, null, -12],
+    ["Lara V", "lara.v@example.com", "", "laravmusic", "R&B", "Vuole sessioni vocali settimanali", "sito", "contattato", "Sito web", "Freya", "Mandare listino vocal", 2, -3, -8],
+    ["Gemma Rossi", "gemma@example.com", "+39 347 880 1200", "", "Pop", "Singolo + videoclip, budget 900 €", "manuale", "in trattativa", "Passaparola", "Astral", "", null, -10, -20],
+    ["Sabbia", "sabbia.band@example.com", "", "sabbiaband", "Indie", "Band di 4, registrazione live", "drive", "nuovo", "TikTok", "", "", null, null, -2],
+    ["Rocco Beats", "rocco@example.com", "", "roccobeats", "Hip hop", "Ha chiesto il listino beat", "sito", "perso", "Sito web", "", "", null, -30, -40],
+  ].map(([name, email, phone, ig, genre, notes, source, status, channel, ref, next, nextOff, lastOff, createdOff]) => ({
+    id: uid++, name, email, phone, ig, genre, notes, source, status, channel, ref, next,
+    nextDate: nextOff === null ? null : addDays(TODAY, nextOff), last: lastOff === null ? null : addDays(TODAY, lastOff), created: addDays(TODAY, createdOff),
+  }));
 
-  const pkg = (name, price, list, done, daysAgo) => {
+  const pkg = (name, price, list, done, daysAgo, dueOff, pays) => {
     const items = [];
-    list.forEach(([s, q]) => { for (let i = 0; i < q; i++) items.push({ id: uid++, service: q > 1 ? `${s} ${i + 1}/${q}` : s, done: false, by: "", at: "" }); });
-    items.slice(0, done).forEach((it) => { it.done = true; it.by = PARTNERS[Math.floor(rand() * 3)]; it.at = addDays(TODAY, -Math.floor(rand() * daysAgo)); });
-    return { id: uid++, name, price: price * 100, purchased: addDays(TODAY, -daysAgo), archived: false, items };
+    list.forEach(([sv, q]) => { for (let i = 0; i < q; i++) items.push({ id: uid++, service: q > 1 ? `${sv} ${i + 1}/${q}` : sv, done: false, by: "", at: "" }); });
+    items.slice(0, done).forEach((it, i) => { it.done = true; it.by = PARTNERS[Math.floor(rand() * 3)]; it.at = addDays(TODAY, -daysAgo + 2 + i * 3); });
+    return { id: uid++, name, price: price * 100, purchased: addDays(TODAY, -daysAgo), due: dueOff === null ? null : addDays(TODAY, dueOff), archived: false, items,
+      payments: pays.map(([eur, method, off]) => ({ id: uid++, date: addDays(TODAY, off), cents: eur * 100, method, by: PARTNERS[Math.floor(rand() * 3)] })) };
   };
+  const trk = (title, stage, revs, dueOff) => ({ id: uid++, title, stage, revs, due: dueOff === null ? null : addDays(TODAY, dueOff), url: "" });
   const artists = [
-    { id: uid++, name: "Kaos Melodico", email: "kaos@example.com", phone: "", ig: "@kaosmelodico", packages: [pkg("EP Pack", 1500, [["Registrazione", 5], ["Mix", 5], ["Master", 5]], 13, 60)] },
-    { id: uid++, name: "Aria Blu", email: "aria@example.com", phone: "", ig: "@ariablu", packages: [pkg("Singolo Completo", 350, [["Registrazione", 1], ["Mix", 1], ["Master", 1]], 3, 20)] },
-    { id: uid++, name: "Dr. Bassi", email: "", phone: "+39 340 555 0192", ig: "@drbassi", packages: [pkg("Vocal Sessions x4", 280, [["Sessione vocale", 4]], 1, 10)] },
-    { id: uid++, name: "Lunaria", email: "lunaria@example.com", phone: "", ig: "@lunaria", packages: [pkg("Produzione + Singolo", 600, [["Produzione", 1], ["Registrazione", 1], ["Mix", 1], ["Master", 1]], 2, 14)] },
+    { id: uid++, name: "Kaos Melodico", email: "kaos@example.com", phone: "", ig: "@kaosmelodico", channel: "Instagram", ref: "Plugghe",
+      packages: [pkg("EP Pack", 1500, [["Registrazione", 5], ["Mix", 5], ["Master", 5]], 13, 60, -5, [[600, "bonifico", -60], [400, "bonifico", -25]])],
+      tracks: [trk("Notte fonda", 4, 2, null), trk("Cemento", 3, 3, 4), trk("Luce blu", 2, 1, 9), trk("Fuori", 1, 0, 15), trk("Outro", 0, 0, 20)] },
+    { id: uid++, name: "Aria Blu", email: "aria@example.com", phone: "", ig: "@ariablu", channel: "TikTok", ref: "Freya",
+      packages: [pkg("Singolo Completo", 350, [["Registrazione", 1], ["Mix", 1], ["Master", 1]], 3, 20, -10, [[350, "contanti", -20]])],
+      tracks: [trk("Polvere", 4, 1, null)] },
+    { id: uid++, name: "Dr. Bassi", email: "", phone: "+39 340 555 0192", ig: "@drbassi", channel: "Passaparola", ref: "Astral",
+      packages: [pkg("Vocal Sessions x4", 280, [["Sessione vocale", 4]], 1, 10, 20, [[140, "pos", -10]])], tracks: [] },
+    { id: uid++, name: "Lunaria", email: "lunaria@example.com", phone: "", ig: "@lunaria", channel: "Sito web", ref: "Plugghe",
+      packages: [pkg("Produzione + Singolo", 600, [["Produzione", 1], ["Registrazione", 1], ["Mix", 1], ["Master", 1]], 2, 14, 10, [[300, "bonifico", -14]])],
+      tracks: [trk("Marea", 2, 2, 6)] },
   ];
+
+  // agenda: last 8 weeks + next 10 days, no overlaps in the same room
+  const sessions = [];
+  const SLOTS = [["10:00", "13:00"], ["14:00", "17:00"], ["15:00", "18:00"], ["18:00", "21:00"], ["19:00", "22:00"]];
+  for (let off = -56; off <= 10; off++) {
+    const date = addDays(TODAY, off), dow = new Date(`${date}T12:00:00`).getDay();
+    if (dow === 0) continue;
+    const n = Math.floor(rand() * 3) + (dow >= 4 ? 1 : 0);
+    for (let k = 0; k < n; k++) {
+      const [start, end] = dow >= 4 && rand() < 0.6 ? SLOTS[3 + Math.floor(rand() * 2)] : SLOTS[Math.floor(rand() * SLOTS.length)];
+      const room = rand() < 0.65 ? "Sala A" : "Sala B";
+      if (sessions.some((x) => x.date === date && x.room === room && x.start < end && x.end > start)) continue;
+      const a = artists[Math.floor(rand() * artists.length)];
+      sessions.push({ id: uid++, date, start, end, room, engineer: PARTNERS[Math.floor(rand() * 3)], artistId: a.id, itemId: null, title: "", status: off < 0 ? (rand() < 0.08 ? "annullata" : "completata") : "prenotata" });
+    }
+  }
+  const openDay = (o) => { while (new Date(`${addDays(TODAY, o)}T12:00:00`).getDay() === 0) o++; return addDays(TODAY, o); };
+  const free = (date, room, start, end) => !sessions.some((x) => x.date === date && x.room === room && x.status !== "annullata" && x.start < end && x.end > start);
+  const linkSession = (a, itemIdx, off, room, start, end, eng) => {
+    const date = openDay(off), it = a.packages[0].items[itemIdx];
+    if (free(date, room, start, end)) sessions.push({ id: uid++, date, start, end, room, engineer: eng, artistId: a.id, itemId: it.id, title: "", status: "prenotata" });
+  };
+  linkSession(artists[2], 1, 1, "Sala A", "10:00", "13:00", "Freya");
+  linkSession(artists[3], 2, 3, "Sala B", "11:00", "14:00", "Plugghe");
+
+  const equipment = [
+    ["Neumann U87 Ai", "Microfoni", -700, 3200, 8, 30, 12, -370, "Matricola demo"],
+    ["Universal Audio Apollo x8", "Computer & interfacce", -420, 2900, 5, 310, null, null, ""],
+    ["Genelec 8040B (coppia)", "Monitor & cuffie", -900, 1800, 7, null, null, null, ""],
+    ["Neve 1073 DPX", "Preamp & outboard", -300, 3800, 8, 400, 24, null, ""],
+    ["Pannelli acustici sala A", "Arredo & acustica", -1000, 1500, 10, null, null, null, ""],
+    ["Mac Studio M2", "Computer & interfacce", -500, 2600, 4, 45, 6, -200, "Pulizia e backup ogni 6 mesi"],
+  ].map(([name, cat, bought, eur, life, warr, every, last, notes]) => ({ id: uid++, name, cat, purchase: addDays(TODAY, bought), cents: eur * 100, life, warranty: warr === null ? null : addDays(TODAY, warr), every, last: last === null ? null : addDays(TODAY, last), notes }));
+
+  const moves = [];
+  const MN = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
+  for (let m = 0; m < NOW.getMonth(); m++) PARTNERS.forEach((p, i) => moves.push({ id: uid++, date: iso(new Date(YEAR, m, 28, 12)), partner: p, kind: "prelievo", cents: 35000 + i * 5000, note: `Compenso ${MN[m]}` }));
+  moves.push({ id: uid++, date: iso(new Date(YEAR, 0, 10, 12)), partner: "Plugghe", kind: "versamento", cents: 150000, note: "Contributo acquisto Neve 1073" });
 
   const metrics = {};
   let igF = 4200, ttF = 9800;
@@ -517,18 +597,24 @@ function makeData() {
     { id: uid++, title: "Listino 2027", body: "Rivedere i prezzi di mix e master: siamo sotto la media della zona del 20%.", cat: "Crescita", pinned: false, done: false, due: addDays(TODAY, 30), author: "Plugghe", updated: addDays(TODAY, -12) },
     { id: uid++, title: "Cambiare corde al basso dello studio", body: "", cat: "Operativo", pinned: false, done: true, due: null, author: "Freya", updated: addDays(TODAY, -15) },
   ];
-  return { tx, leads, artists, metrics, apps, notes };
+  return { tx, leads, artists, metrics, apps, notes, sessions, equipment, moves };
 }
 
 // ─── state ──────────────────────────────────────────────────────────────────
 const S = Object.assign(makeData(), {
   user: null,
-  view: { finMonth: NOW.getMonth() + 1, finSource: "", crmStatus: "", noteCat: "", anaDate: addDays(TODAY, -1), chartMode: "pl", series: { income: true, expenses: true, profit: true } },
+  settings: {
+    rooms: ["Sala A", "Sala B"], openHour: 10, closeHour: 22, openDays: [1, 2, 3, 4, 5, 6],
+    fixedCosts: [["Affitto", 140000], ["Utenze", 25000], ["Software & plugin", 15000], ["Marketing", 30000], ["Altro", 20000]],
+    tax: { coefficient: 0.67, substituteRate: 0.15, inpsRate: 0.2607, threshold: 85000, vatNumbers: 3 },
+    shares: { Plugghe: 33.33, Freya: 33.33, Astral: 33.34 },
+  },
+  view: { week: null, finMonth: NOW.getMonth() + 1, finSource: "", crmStatus: "", noteCat: "", anaDate: addDays(TODAY, -1), chartMode: "pl", series: { income: true, expenses: true, profit: true } },
 });
 
 const ROUTES = [
-  ["panoramica", "Panoramica"], ["finanza", "Finanza"], ["crm", "CRM"], ["artisti", "Artisti"],
-  ["analytics", "Analytics"], ["insights", "Consigli & Insights"], ["integrazioni", "Integrazioni"],
+  ["panoramica", "Panoramica"], ["agenda", "Agenda"], ["finanza", "Finanza"], ["incassi", "Incassi"], ["crm", "CRM"], ["artisti", "Artisti"],
+  ["analytics", "Analytics"], ["soci", "Soci"], ["attrezzatura", "Attrezzatura"], ["insights", "Insights"], ["impostazioni", "Impostazioni"],
 ];
 const route = () => { const h = location.hash.slice(1); return ROUTES.some(([r]) => r === h) ? h : "panoramica"; };
 
@@ -552,6 +638,84 @@ function artistState(a) {
 const UPSELL_ORDER = { esaurito: 0, "in-esaurimento": 1, attivo: 2, "nessun-pacchetto": 3 };
 const sortedArtists = () => S.artists.map((a) => ({ a, s: artistState(a) })).sort((x, y) => UPSELL_ORDER[x.s.upsell] - UPSELL_ORDER[y.s.upsell] || x.a.name.localeCompare(y.a.name));
 const metric = (date, src, key) => S.metrics[date]?.[src]?.[key] ?? null;
+
+// ─── business logic (same rules as the hub) ─────────────────────────────────
+const WEEKDAYS = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
+const CHANNELS = ["Instagram", "TikTok", "Sito web", "Passaparola", "Eventi", "Altro"];
+const TRACK_STAGES = ["Registrazione", "Mix", "Revisioni", "Master", "Consegnato"];
+const EQ_CATS = ["Microfoni", "Preamp & outboard", "Monitor & cuffie", "Strumenti", "Computer & interfacce", "Software", "Arredo & acustica", "Altro"];
+const mins = (t) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+const hoursOf = (x) => (mins(x.end) - mins(x.start)) / 60;
+const dowOf = (d) => (new Date(`${d}T12:00:00`).getDay() + 6) % 7; // 0 = lunedì
+const weekStart = (d) => addDays(d, -dowOf(d));
+const daysBetween = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 86400000);
+const artistById = (id) => S.artists.find((a) => a.id === id);
+function itemInfo(itemId) { for (const a of S.artists) for (const p of a.packages) { const it = p.items.find((i) => i.id === itemId); if (it) return { a, p, it }; } return null; }
+function saturation(from, to) {
+  const st = S.settings; let cap = 0, booked = 0;
+  for (let d = from; d <= to; d = addDays(d, 1)) if (st.openDays.includes(dowOf(d) + 1)) cap += (st.closeHour - st.openHour) * st.rooms.length;
+  for (const x of S.sessions) if (x.date >= from && x.date <= to && x.status !== "annullata") booked += hoursOf(x);
+  return { booked, cap, rate: cap ? booked / cap : 0 };
+}
+function heatmap(weeks = 8) {
+  const to = addDays(weekStart(TODAY), -1), from = addDays(to, -(weeks * 7 - 1));
+  const grid = Array.from({ length: 7 }, () => Array(24).fill(0));
+  for (const x of S.sessions) if (x.date >= from && x.date <= to && x.status !== "annullata") for (let h = Math.floor(mins(x.start) / 60); h < Math.ceil(mins(x.end) / 60); h++) grid[dowOf(x.date)][h]++;
+  const den = weeks * S.settings.rooms.length;
+  return (d, h) => Math.min(1, grid[d][h] / den);
+}
+function packageMoney() {
+  const out = [];
+  for (const a of S.artists) for (const p of a.packages) {
+    const paid = p.payments.reduce((t, x) => t + x.cents, 0), total = p.items.length, done = p.items.filter((i) => i.done).length;
+    const delivered = total ? Math.round((p.price * done) / total) : 0, outstanding = Math.max(0, p.price - paid);
+    out.push({ a, p, paid, outstanding, total, done, delivered, prepaidOwed: Math.max(0, Math.min(paid, p.price) - delivered), daysLate: p.due && outstanding > 0 && p.due < TODAY ? daysBetween(p.due, TODAY) : 0 });
+  }
+  return out;
+}
+const fixedTotal = () => S.settings.fixedCosts.reduce((a, [, c]) => a + c, 0);
+const incomeBetween = (from, to) => S.tx.reduce((a, t) => (t.cents > 0 && t.date >= from && t.date <= to ? a + t.cents : a), 0);
+function taxEstimate(rev) {
+  const t = S.settings.tax, income = rev * t.coefficient, contrib = income * t.inpsRate, tax = Math.max(0, income - contrib) * t.substituteRate;
+  return { income: Math.round(income), contrib: Math.round(contrib), tax: Math.round(tax), total: Math.round(contrib + tax), per100: t.coefficient * (t.inpsRate + (1 - t.inpsRate) * t.substituteRate) * 100 };
+}
+function fiscal() { const rev = incomeBetween(`${YEAR}-01-01`, `${YEAR}-12-31`); return { rev, est: taxEstimate(rev), perVat: rev / S.settings.tax.vatNumbers, thr: S.settings.tax.threshold * 100 }; }
+function breakEven() {
+  const from = iso(new Date(YEAR, NOW.getMonth(), 1)), to = iso(new Date(YEAR, NOW.getMonth() + 1, 0));
+  const fixed = fixedTotal(), income = incomeBetween(from, to), missing = Math.max(0, fixed - income);
+  const recent = S.tx.filter((t) => t.cents > 0 && (t.cat === "Sessioni" || t.cat === "Mix & Master") && t.date >= addDays(TODAY, -180));
+  const avg = recent.length ? Math.round(recent.reduce((a, t) => a + t.cents, 0) / recent.length) : 15000;
+  return { fixed, income, missing, avg, need: Math.ceil(missing / avg), rate: fixed ? income / fixed : 1 };
+}
+function channelRevenue(money = packageMoney()) {
+  const m = new Map();
+  for (const x of money) { const ch = x.a.channel || "Non indicato"; const e = m.get(ch) ?? { ch, paid: 0, clients: new Set() }; e.paid += x.paid; e.clients.add(x.a.id); m.set(ch, e); }
+  return [...m.values()].map((e) => ({ ch: e.ch, paid: e.paid, clients: e.clients.size, avg: Math.round(e.paid / e.clients.size), leads: S.leads.filter((l) => (l.channel || "Non indicato") === e.ch).length })).sort((a, b) => b.paid - a.paid);
+}
+function followUps() {
+  return S.leads.filter((l) => l.status !== "convertito" && l.status !== "perso").map((l) => {
+    const last = l.last ?? l.created, due = l.nextDate !== null && l.nextDate <= TODAY, days = daysBetween(last, TODAY);
+    return { l, due, stale: days > 7, days };
+  }).filter((x) => x.due || x.stale).sort((a, b) => b.due - a.due || b.days - a.days);
+}
+function partnerStats(p) {
+  return {
+    clients: S.artists.filter((a) => a.ref === p).length,
+    hours: S.sessions.filter((x) => x.engineer === p && x.status === "completata" && x.date.startsWith(String(YEAR))).reduce((a, x) => a + hoursOf(x), 0),
+    services: S.artists.flatMap((a) => a.packages.flatMap((pk) => pk.items)).filter((i) => i.done && i.by === p).length,
+  };
+}
+const residual = (e) => Math.max(0, Math.round(e.cents * (1 - daysBetween(e.purchase, TODAY) / 365.25 / e.life)));
+function nextService(e) { if (!e.every) return null; const d = new Date(`${e.last ?? e.purchase}T12:00:00`); d.setMonth(d.getMonth() + e.every); return iso(d); }
+function eqAlerts() {
+  return S.equipment.flatMap((e) => {
+    const out = [], ns = nextService(e);
+    if (ns && ns <= addDays(TODAY, 14)) out.push({ e, kind: "manutenzione", date: ns, late: ns < TODAY });
+    if (e.warranty && e.warranty >= TODAY && e.warranty <= addDays(TODAY, 60)) out.push({ e, kind: "garanzia", date: e.warranty, late: false });
+    return out;
+  });
+}
+const allTracks = () => S.artists.flatMap((a) => (a.tracks ?? []).map((t) => ({ ...t, a })));
 
 // ─── UI atoms ───────────────────────────────────────────────────────────────
 const pageHead = (eyebrow, title, intro, actions = "") => `
@@ -635,6 +799,24 @@ function panoramica() {
     ${stat(`Utile ${MONTHS[m]}`, fmtEur(cur.profit), cur.margin === null ? "Nessuna entrata" : `Margine ${fmtPct(cur.margin)}`)}
     ${stat("Liquidità totale", fmtEur(bal.total), `Banca ${fmtEur(bal.bank)} · Contanti ${fmtEur(bal.cash)}`)}
   </div>
+  ${(() => {
+    const todayS = S.sessions.filter((x) => x.date === TODAY && x.status !== "annullata").sort((a, b) => a.start.localeCompare(b.start));
+    const money = packageMoney(), recv = money.reduce((a, x) => a + x.outstanding, 0), late = money.filter((x) => x.daysLate > 0);
+    const fis = fiscal(), be = breakEven();
+    const todo = [
+      ...followUps().slice(0, 4).map((f) => ["#crm", f.due ? "critical" : "warn", "Ricontattare", `${f.l.name}${f.due && f.l.next ? ` · ${f.l.next}` : ` · fermo da ${f.days} giorni`}`]),
+      ...allTracks().filter((t) => t.stage < 4 && t.due && t.due <= addDays(TODAY, 10)).sort((a, b) => a.due.localeCompare(b.due)).slice(0, 4).map((t) => ["#artisti", t.due < TODAY ? "critical" : "warn", "Consegna", `${t.title} · ${t.a.name} · ${fmtDate(t.due)}`]),
+      ...late.slice(0, 3).map((x) => ["#incassi", "critical", "Sollecito", `${x.a.name} · ${fmtEur(x.outstanding)} da ${x.daysLate} giorni`]),
+      ...eqAlerts().slice(0, 3).map((x) => ["#attrezzatura", x.late ? "critical" : "warn", x.kind === "manutenzione" ? "Manutenzione" : "Garanzia", `${x.e.name} · ${fmtDate(x.date)}`]),
+    ];
+    return `<div class="grid cols-4 mt">
+      ${stat("Oggi in sala", todayS.length, (todayS.length ? todayS.slice(0, 2).map((x) => `${x.start} ${esc(artistById(x.artistId)?.name ?? x.title)}`).join(" · ") : "Nessuna sessione prenotata") + `<div><a class="xs" href="#agenda" style="text-decoration:underline">Apri agenda</a></div>`)}
+      ${stat("Crediti da incassare", fmtEur(recv), late.length ? `<span class="delta-down">${late.length} ${late.length === 1 ? "pagamento" : "pagamenti"} in ritardo</span>` : "Nessun ritardo")}
+      ${stat("Da accantonare per tasse", fmtEur(fis.est.total), `≈ ${fis.est.per100.toFixed(0)} € ogni 100 € incassati`)}
+      ${stat(`Pareggio di ${MONTHS[m]}`, be.missing > 0 ? fmtEur(be.missing) : "Raggiunto", (be.missing > 0 ? `mancano ≈ ${be.need} sessioni` : `costi fissi ${fmtEur(be.fixed)} coperti`) + `<div class="meter" style="margin-top:10px"><i style="width:${Math.min(100, be.rate * 100)}%"></i></div>`)}
+    </div>
+    ${todo.length ? `<section class="card mt"><div class="card-head"><h3>Da fare</h3></div><div class="grid cols-2" style="gap:8px">${todo.map(([href, tone, label, text]) => `<a href="${href}" class="upsell-banner ${tone === "critical" ? "" : "soon"}">${badge(tone, label)}<span class="grow small" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(text)}</span></a>`).join("")}</div></section>` : ""}`;
+  })()}
   <div class="grid cols-3 mt">
     <section class="card span-2"><div class="card-head"><h3>Opportunità di upsell</h3><a class="btn btn-sm" href="#artisti">Tutti gli artisti</a></div>
       ${up.length === 0 ? empty("✓", "Nessun pacchetto in esaurimento", "Quando un artista sta per finire i servizi acquistati, comparirà qui.") : `<div class="stack">${up.map(({ a, s }) => `
@@ -691,6 +873,34 @@ function finanza() {
     <div class="chart3d" id="chart3d" role="img" aria-label="Grafico 3D mensile di entrate, uscite e utile; i valori sono anche nella tabella del conto economico."><div class="empty" style="position:absolute;inset:0;display:grid;place-content:center"><span class="faint small">Caricamento grafico 3D…</span></div></div>
     <div class="xs faint" style="margin-top:8px">Trascina per ruotare · passa sopra un mese per i dettagli</div>
   </section>
+  ${(() => {
+    const t = S.settings.tax, fis = fiscal(), be = breakEven(), ch = channelRevenue(), maxCh = Math.max(1, ...ch.map((c) => c.paid)), vatPct = fis.perVat / fis.thr;
+    return `<div class="grid cols-3 mt" style="align-items:start">
+      <section class="card"><div class="card-head"><h3>Tasse ${YEAR} · regime forfettario</h3><a class="btn btn-sm btn-ghost" href="#impostazioni">Parametri</a></div>
+        <div class="stat"><div class="label">Da accantonare finora</div><div class="value">${fmtEur(fis.est.total)}</div><div class="sub">Ogni 100 € incassati mettete da parte circa <strong style="color:var(--text)">${fis.est.per100.toFixed(0)} €</strong></div></div>
+        <div class="stack small mt">
+          <div class="row between"><span class="muted">Ricavi incassati</span><span class="num">${fmtEur(fis.rev)}</span></div>
+          <div class="row between"><span class="muted">Reddito (${Math.round(t.coefficient * 100)}% dei ricavi)</span><span class="num">${fmtEur(fis.est.income)}</span></div>
+          <div class="row between"><span class="muted">Contributi INPS (${(t.inpsRate * 100).toFixed(2).replace(".", ",")}%)</span><span class="num">${fmtEur(fis.est.contrib)}</span></div>
+          <div class="row between"><span class="muted">Imposta sostitutiva (${Math.round(t.substituteRate * 100)}%)</span><span class="num">${fmtEur(fis.est.tax)}</span></div>
+        </div>
+        <div class="mt"><div class="row between small"><span class="muted">Soglia ${t.threshold.toLocaleString("it-IT")} € per partita IVA</span><span class="num">${fmtPct(vatPct)}</span></div>
+          <div class="meter" style="margin-top:6px"><i style="width:${Math.min(100, vatPct * 100)}%;${vatPct > 0.85 ? "background:var(--critical)" : ""}"></i></div>
+          <div class="xs faint" style="margin-top:6px">${fmtEur(fis.perVat)} a testa su ${t.vatNumbers} partite IVA. Stima indicativa: verificatela con il commercialista.</div></div>
+      </section>
+      <section class="card"><div class="card-head"><h3>Punto di pareggio · ${MONTHS[NOW.getMonth()]}</h3></div>
+        <div class="stat"><div class="label">${be.missing > 0 ? "Mancano per coprire i costi fissi" : "Costi fissi coperti"}</div><div class="value">${be.missing > 0 ? fmtEur(be.missing) : "✓"}</div>
+          <div class="sub">${be.missing > 0 ? `≈ ${be.need} sessioni da ${fmtEur(be.avg)} (media ultimi 6 mesi)` : `Oltre il pareggio di ${fmtEur(be.income - be.fixed)}`}</div></div>
+        <div class="meter mt"><i style="width:${Math.min(100, be.rate * 100)}%"></i></div>
+        <div class="row between small" style="margin-top:6px"><span class="muted">Incassato ${fmtEur(be.income)}</span><span class="muted">Costi fissi ${fmtEur(be.fixed)}</span></div>
+        <div class="stack xs faint mt">${S.settings.fixedCosts.map(([l, c]) => `<div class="row between"><span>${esc(l)}</span><span class="num">${fmtEur(c)}</span></div>`).join("")}</div>
+      </section>
+      <section class="card"><div class="card-head"><h3>Fatturato per canale di acquisizione</h3></div>
+        <div class="stack small">${ch.map((c) => `<div><div class="row between"><span>${esc(c.ch)} <span class="faint xs">· ${c.clients} ${c.clients === 1 ? "cliente" : "clienti"}</span></span><span class="num">${fmtEur(c.paid)}</span></div>
+          <div class="meter" style="margin-top:6px"><i style="width:${(c.paid / maxCh) * 100}%;background:var(--series-income)"></i></div>
+          <div class="xs faint" style="margin-top:3px">Valore medio per cliente ${fmtEur(c.avg)}${c.leads ? ` · ${c.leads} contatti in CRM` : ""}</div></div>`).join("")}</div>
+      </section></div>`;
+  })()}
   <div class="grid cols-3 mt">
     <section class="card"><div class="card-head"><h3>Movimento in contanti</h3></div>
       <form data-form="cash" class="stack">
@@ -737,14 +947,29 @@ function crm() {
   const BADGE = { nuovo: "info", contattato: "plain", "in trattativa": "warn", convertito: "good", perso: "critical" };
   const SRC = { drive: "Google Drive", manuale: "Manuale", sito: "Sito web" };
   return pageHead("Clienti potenziali", "CRM", "Anagrafiche sincronizzate dal Google Drive aziendale e dalle candidature del sito, più gli inserimenti manuali.", `<button class="btn btn-chrome" data-action="drive-sync">Sincronizza Drive</button>`) + `
-  <div class="grid cols-4">${stat("Nuovi", count("nuovo"), "da contattare")}${stat("In trattativa", count("in trattativa"))}${stat("Convertiti", count("convertito"), S.leads.length ? `${Math.round((count("convertito") / S.leads.length) * 100)}% del totale` : "")}${stat("Google Drive", `<span style="font-size:18px">Sincronizzato</span>`, `oggi · ${S.leads.filter((l) => l.source === "drive").length} contatti dal foglio clienti`)}</div>
+  <div class="grid cols-4">${stat("Nuovi", count("nuovo"), "da contattare")}${stat("Da ricontattare", `<span class="${followUps().length ? "delta-down" : ""}">${followUps().length}</span>`, "azioni scadute o fermi da più di 7 giorni")}${stat("Convertiti", count("convertito"), S.leads.length ? `${Math.round((count("convertito") / S.leads.length) * 100)}% del totale` : "")}${stat("Google Drive", `<span style="font-size:18px">Sincronizzato</span>`, `oggi · ${S.leads.filter((l) => l.source === "drive").length} contatti dal foglio clienti`)}</div>
+  ${followUps().length ? `<section class="card mt"><div class="card-head"><h3>Da ricontattare oggi</h3></div><div class="stack">${followUps().slice(0, 6).map((f) => `
+    <div class="upsell-banner ${f.due ? "" : "soon"}"><span aria-hidden="true">${f.due ? "●" : "◐"}</span>
+      <span class="grow"><strong style="font-weight:600">${esc(f.l.name)}</strong>${f.due && f.l.next ? ` · ${esc(f.l.next)}` : ""}<span class="xs muted"> · ${f.due ? `previsto ${fmtDate(f.l.nextDate)}` : ""}${f.due && f.stale ? " · " : ""}${f.stale ? `nessun contatto da ${f.days} giorni` : ""}</span></span>
+      <button class="btn btn-sm btn-chrome" data-action="lead-contacted" data-id="${f.l.id}">✓ Contattato oggi</button></div>`).join("")}</div></section>` : ""}
   <div class="grid cols-3 mt">
     <section class="card span-2 flush"><div class="card-head" style="padding:20px 22px 0"><h3>Contatti</h3>
       <div class="segmented"><button type="button" data-action="crm-status" data-v="" aria-current="${!st}">Tutti</button>${LEAD_STATUSES.map((s) => `<button type="button" data-action="crm-status" data-v="${s}" aria-current="${st === s}" style="text-transform:capitalize">${s}</button>`).join("")}</div></div>
-      ${list.length === 0 ? empty("☺", "Nessun contatto in questo stato") : `<div class="table-wrap" style="margin-top:8px"><table class="table"><thead><tr><th>Contatto</th><th>Recapiti</th><th>Fonte</th><th>Stato</th><th></th></tr></thead><tbody>
+      ${list.length === 0 ? empty("☺", "Nessun contatto in questo stato") : `<div class="table-wrap" style="margin-top:8px"><table class="table"><thead><tr><th>Contatto</th><th>Recapiti</th><th>Provenienza</th><th>Follow-up</th><th>Stato</th><th></th></tr></thead><tbody>
         ${list.map((l) => `<tr><td><div style="font-weight:600">${esc(l.name)}</div><div class="xs faint">${[l.genre, fmtDate(l.created)].filter(Boolean).map(esc).join(" · ")}</div>${l.notes ? `<div class="xs muted" style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(l.notes)}">${esc(l.notes)}</div>` : ""}</td>
           <td class="small">${l.email ? `<div>${esc(l.email)}</div>` : ""}${l.phone ? `<div class="muted">${esc(l.phone)}</div>` : ""}${l.ig ? `<div class="muted">@${esc(l.ig.replace(/^@/, ""))}</div>` : ""}</td>
-          <td class="small muted">${SRC[l.source]}</td>
+          <td class="small"><details class="disclosure"><summary><div>${l.channel ? esc(l.channel) : `<span class="faint">Canale?</span>`}</div><div class="xs faint">${SRC[l.source]}${l.ref ? ` · portato da ${l.ref}` : ""}</div></summary>
+            <form data-form="lead-channel" data-id="${l.id}" class="stack" style="gap:6px;margin-top:6px;min-width:150px">
+              <select class="input" name="channel" style="height:30px;font-size:12.5px" aria-label="Canale"><option value="">Canale…</option>${CHANNELS.map((c) => `<option ${c === l.channel ? "selected" : ""}>${c}</option>`).join("")}</select>
+              <select class="input" name="ref" style="height:30px;font-size:12.5px" aria-label="Portato da"><option value="">Portato da…</option>${PARTNERS.map((p) => `<option ${p === l.ref ? "selected" : ""}>${p}</option>`).join("")}</select>
+              <button class="btn btn-sm" type="submit">Salva</button></form></details></td>
+          <td class="small" style="min-width:170px"><details class="disclosure"><summary>${l.next ? `<div>${esc(l.next)}</div>${l.nextDate ? `<div class="xs ${l.nextDate <= TODAY ? "delta-down" : "faint"}">${fmtDate(l.nextDate)}</div>` : ""}` : `<span class="faint">+ Prossima azione</span>`}
+              <div class="xs faint">${l.last ? `Sentito il ${fmtDate(l.last)}` : "Mai contattato"}</div></summary>
+            <form data-form="lead-followup" data-id="${l.id}" class="stack" style="gap:6px;margin-top:6px">
+              <input class="input" name="next" value="${esc(l.next)}" placeholder="Es. mandare listino" style="height:30px;font-size:12.5px" aria-label="Prossima azione">
+              <input class="input" type="date" name="nextDate" value="${l.nextDate ?? ""}" style="height:30px;font-size:12.5px" aria-label="Data">
+              <button class="btn btn-sm" type="submit">Salva</button></form></details>
+            ${l.status !== "convertito" && l.status !== "perso" ? `<button class="btn btn-ghost btn-sm" style="padding-left:0;margin-top:4px" data-action="lead-contacted" data-id="${l.id}">✓ Contattato oggi</button>` : ""}</td>
           <td><div class="row" style="gap:6px">${badge(BADGE[l.status], l.status)}${select("status", LEAD_STATUSES, l.status, `data-change="lead-status" data-id="${l.id}" aria-label="Cambia stato" style="height:28px;width:124px;font-size:12.5px"`)}</div></td>
           <td class="right" style="white-space:nowrap">${l.status !== "convertito" ? `<button class="btn btn-sm" data-action="lead-convert" data-id="${l.id}">→ Artista</button>` : ""}<button class="btn btn-ghost btn-sm btn-danger" data-action="lead-del" data-id="${l.id}" aria-label="Elimina contatto">✕</button></td></tr>`).join("")}
       </tbody></table></div>`}</section>
@@ -754,6 +979,8 @@ function crm() {
         <label class="field" for="l-email"><span>Email</span><input id="l-email" class="input" type="email" name="email"></label>
         <div class="form-grid"><label class="field" for="l-phone"><span>Telefono</span><input id="l-phone" class="input" name="phone"></label><label class="field" for="l-ig"><span>Instagram</span><input id="l-ig" class="input" name="ig" placeholder="@artista"></label></div>
         <label class="field" for="l-genre"><span>Genere</span><input id="l-genre" class="input" name="genre" placeholder="Rap, R&amp;B, Pop…"></label>
+        <div class="form-grid"><label class="field" for="l-ch"><span>Come ci ha trovati</span><select id="l-ch" class="input" name="channel"><option value="">—</option>${CHANNELS.map((c) => `<option>${c}</option>`).join("")}</select></label>
+          <label class="field" for="l-ref"><span>Portato da</span><select id="l-ref" class="input" name="ref"><option value="">—</option>${PARTNERS.map((p) => `<option>${p}</option>`).join("")}</select></label></div>
         <label class="field" for="l-notes"><span>Note</span><textarea id="l-notes" class="input" name="notes" placeholder="Cosa cerca, budget, tempistiche…"></textarea></label>
         <button class="btn btn-chrome" type="submit">Aggiungi alla pipeline</button>
       </form></section>
@@ -778,17 +1005,50 @@ function artisti() {
         <div class="row" style="gap:16px;align-items:flex-start">${ring(s.done, s.total, 64)}
           <div class="grow"><div class="row-wrap between"><h2 class="title-l">${esc(a.name)}</h2>${badge(bcls, blabel)}</div>
             <div class="small muted" style="margin-top:4px">${s.total ? `${s.done} di ${s.total} servizi completati · ${s.remaining} rimanenti` : "Nessun servizio attivo"}${contacts ? `<span class="faint"> · ${contacts}</span>` : ""}</div>
+            ${a.channel || a.ref ? `<div class="row-wrap" style="margin-top:6px">${a.channel ? badge("plain", `Da ${esc(a.channel)}`) : ""}${a.ref ? badge("plain", `Seguito da ${a.ref}`) : ""}</div>` : ""}
             ${s.total ? `<div class="meter" style="margin-top:10px"><i style="width:${(s.done / s.total) * 100}%"></i></div>` : ""}</div></div>
         ${hint ? `<div class="upsell-banner mt ${s.upsell === "esaurito" ? "" : "soon"}"><span aria-hidden="true">${s.upsell === "esaurito" ? "●" : "◐"}</span><span class="grow">${hint}</span><button class="btn btn-sm btn-chrome" data-action="open-pkg" data-id="${a.id}">Proponi pacchetto</button></div>` : ""}
         ${active.map((p) => { const d = p.items.filter((i) => i.done).length; return `<div class="mt">
           <div class="row-wrap between" style="margin-bottom:10px"><div><div class="title-m">${esc(p.name)}</div><div class="xs faint">Acquistato il ${fmtDate(p.purchased)}${p.price ? ` · ${fmtEur(p.price)}` : ""} · ${d}/${p.items.length} completati</div></div>
             <div class="row" style="gap:4px"><button class="btn btn-ghost btn-sm" data-action="pkg-archive" data-id="${p.id}">Archivia</button></div></div>
-          <div class="checklist">${p.items.map((it) => `<button type="button" class="check ${it.done ? "done" : ""}" role="checkbox" aria-checked="${it.done}" data-action="item-toggle" data-id="${it.id}" title="${it.done ? `Completato ${fmtDate(it.at)} da ${it.by}` : "Segna come completato"}"><span class="box" aria-hidden="true"></span><span class="label grow">${esc(it.service)}</span></button>`).join("")}</div></div>`; }).join("")}
+          <div class="checklist">${p.items.map((it) => `<button type="button" class="check ${it.done ? "done" : ""}" role="checkbox" aria-checked="${it.done}" data-action="item-toggle" data-id="${it.id}" title="${it.done ? `Completato ${fmtDate(it.at)} da ${it.by}` : "Segna come completato"}"><span class="box" aria-hidden="true"></span><span class="label grow">${esc(it.service)}</span></button>`).join("")}</div>
+          ${(() => {
+            if (!p.price) return "";
+            const paid = p.payments.reduce((t, x) => t + x.cents, 0), owed = Math.max(0, p.price - paid), late = owed > 0 && p.due && p.due < TODAY;
+            return `<details class="disclosure" style="margin-top:10px" ${S.view.openPay === p.id ? "open" : ""}><summary class="small"><span class="chev">›</span>
+              ${owed === 0 ? badge("good", "Saldato") : `${badge(late ? "critical" : "warn", late ? "Saldo in ritardo" : "Da saldare")} <span class="muted">pagato ${fmtEur(paid)} · mancano <strong style="color:var(--text)">${fmtEur(owed)}</strong>${p.due ? ` · entro il ${fmtDate(p.due)}` : ""}</span>`}</summary>
+              <div class="stack mt" style="gap:10px">
+                ${p.payments.length ? `<div class="stack xs muted" style="gap:4px">${p.payments.map((x) => `<div class="row between"><span>${fmtDate(x.date)} · ${x.method}</span><span class="num">+${fmtEur(x.cents)}</span></div>`).join("")}</div>` : ""}
+                ${owed > 0 ? `<form data-form="payment" data-id="${p.id}" class="row-wrap">
+                  <input class="input num" name="amount" inputmode="decimal" value="${(owed / 100).toFixed(2).replace(".", ",")}" aria-label="Importo" style="width:110px">
+                  <select class="input" name="method" aria-label="Metodo" style="width:120px"><option value="bonifico">Bonifico</option><option value="contanti">Contanti</option><option value="pos">POS</option></select>
+                  <input class="input" type="date" name="date" value="${TODAY}" aria-label="Data" style="width:150px">
+                  <button class="btn btn-sm btn-chrome" type="submit">Registra pagamento</button></form>` : ""}
+                <form data-form="pkg-due" data-id="${p.id}" class="row-wrap"><span class="xs faint">Scadenza saldo</span><input class="input" type="date" name="due" value="${p.due ?? ""}" aria-label="Scadenza saldo" style="width:150px;height:30px"><button class="btn btn-ghost btn-sm" type="submit">Salva</button></form>
+              </div></details>`;
+          })()}</div>`; }).join("")}
+        <div class="mt"><div class="row between" style="margin-bottom:8px"><div class="title-m">Brani</div><span class="xs faint">${(a.tracks ?? []).filter((t) => t.stage === 4).length}/${(a.tracks ?? []).length} consegnati</span></div>
+          <div class="stack" style="gap:8px">${(a.tracks ?? []).slice().sort((x, y) => x.stage - y.stage).map((t) => `<div class="track-row"><div style="min-width:0">
+            <div class="row-wrap" style="gap:8px"><strong style="font-weight:600">${esc(t.title)}</strong>${badge(t.stage === 4 ? "good" : "plain", TRACK_STAGES[t.stage])}
+              ${t.revs ? `<span class="xs faint">${t.revs} ${t.revs === 1 ? "revisione" : "revisioni"} mix</span>` : ""}
+              ${t.due && t.stage < 4 ? `<span class="xs ${t.due < TODAY ? "delta-down" : "faint"}">consegna ${fmtDate(t.due)}</span>` : ""}</div>
+            <div class="stages" style="margin-top:8px" aria-hidden="true">${TRACK_STAGES.map((_, i) => `<i class="${i <= t.stage ? "on" : ""}"></i>`).join("")}</div></div>
+            <div class="row" style="gap:2px">
+              <button class="btn btn-ghost btn-sm" data-action="track" data-op="back" data-id="${t.id}" title="Fase precedente">‹</button>
+              <button class="btn btn-ghost btn-sm" data-action="track" data-op="rev" data-id="${t.id}" title="Aggiungi una revisione del mix">+rev</button>
+              <button class="btn btn-ghost btn-sm" data-action="track" data-op="next" data-id="${t.id}" title="Fase successiva">›</button>
+              <button class="btn btn-ghost btn-sm btn-danger" data-action="track" data-op="del" data-id="${t.id}" aria-label="Elimina brano">✕</button></div></div>`).join("")}</div>
+          <details class="disclosure" style="margin-top:8px"><summary class="small muted"><span class="chev">›</span> Aggiungi brano</summary>
+            <form data-form="track" data-id="${a.id}" class="form-grid mt"><label class="field"><span>Titolo</span><input class="input" name="title" required></label>
+              <label class="field"><span>Consegna entro</span><input class="input" type="date" name="due"></label>
+              <button class="btn btn-chrome" type="submit">Aggiungi</button></form></details></div>
         ${archived.length ? `<details class="disclosure mt"><summary class="small muted"><span class="chev">›</span> Storico pacchetti (${archived.length})</summary><div class="stack mt small">${archived.map((p) => `<div class="row between"><span>${esc(p.name)} <span class="faint">· ${fmtDate(p.purchased)} · ${p.items.filter((i) => i.done).length}/${p.items.length}</span></span><button class="btn btn-ghost btn-sm" data-action="pkg-restore" data-id="${p.id}">Ripristina</button></div>`).join("")}</div></details>` : ""}
         <details class="disclosure mt" id="pkg-${a.id}"><summary class="small muted"><span class="chev">›</span> Assegna nuovo pacchetto</summary>
           <form data-form="package" data-id="${a.id}" class="stack mt">
             <div class="row-wrap"><span class="xs faint">Preset:</span>${PRESETS.map((p, i) => `<button type="button" class="btn btn-sm" data-action="preset" data-i="${i}">${p.name}</button>`).join("")}</div>
             <div class="form-grid"><label class="field"><span>Nome pacchetto</span><input class="input" name="name" placeholder="Pacchetto personalizzato"></label><label class="field"><span>Prezzo (€)</span><input class="input num" name="price" inputmode="decimal" placeholder="0"></label></div>
+            <div class="form-grid"><label class="field"><span>Saldo entro</span><input class="input" type="date" name="due"></label><label class="field"><span>Acconto versato (€)</span><input class="input num" name="deposit" inputmode="decimal" placeholder="0"></label>
+              <label class="field"><span>Metodo acconto</span><select class="input" name="depositMethod"><option value="bonifico">Bonifico</option><option value="contanti">Contanti</option><option value="pos">POS</option></select></label></div>
             <div class="checklist">${SERVICES.map((sv) => `<label class="check" style="cursor:default"><span class="label grow">${sv}</span><input class="input num" type="number" min="0" max="50" name="qty:${sv}" value="0" style="width:62px;height:30px;text-align:center" aria-label="Quantità ${sv}"></label>`).join("")}</div>
             <button class="btn btn-chrome" type="submit">Assegna pacchetto</button>
           </form></details>
@@ -798,6 +1058,8 @@ function artisti() {
         <label class="field" for="a-name"><span>Nome / nome d'arte *</span><input id="a-name" class="input" name="name" required></label>
         <label class="field" for="a-email"><span>Email</span><input id="a-email" class="input" type="email" name="email"></label>
         <div class="form-grid"><label class="field" for="a-phone"><span>Telefono</span><input id="a-phone" class="input" name="phone"></label><label class="field" for="a-ig"><span>Instagram</span><input id="a-ig" class="input" name="ig"></label></div>
+        <div class="form-grid"><label class="field" for="a-ch"><span>Come ci ha trovati</span><select id="a-ch" class="input" name="channel"><option value="">—</option>${CHANNELS.map((c) => `<option>${c}</option>`).join("")}</select></label>
+          <label class="field" for="a-ref"><span>Seguito da</span><select id="a-ref" class="input" name="ref"><option value="">—</option>${PARTNERS.map((p) => `<option>${p}</option>`).join("")}</select></label></div>
         <button class="btn btn-chrome" type="submit">Aggiungi artista</button>
       </form></section>
   </div>`;
@@ -857,9 +1119,186 @@ function insights() {
   </div>`;
 }
 
-function integrazioni() {
+function agenda() {
+  const st = S.settings, week = S.view.week ?? weekStart(TODAY), days = Array.from({ length: 7 }, (_, i) => addDays(week, i));
+  const ses = S.sessions.filter((x) => x.date >= week && x.date <= days[6]).sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
+  const shown = days.filter((d, i) => st.openDays.includes(i + 1) || ses.some((x) => x.date === d));
+  const ws = saturation(week, days[6]), ms = saturation(iso(new Date(YEAR, NOW.getMonth(), 1)), iso(new Date(YEAR, NOW.getMonth() + 1, 0)));
+  const heat = heatmap(8), hours = Array.from({ length: st.closeHour - st.openHour }, (_, i) => st.openHour + i), hdays = st.openDays.map((d) => d - 1);
+  const empties = hdays.reduce((a, d) => a + hours.filter((h) => heat(d, h) < 0.15).length, 0);
+  const COLORS = ["var(--room-1)", "var(--room-2)", "var(--room-3)", "var(--room-4)"], rc = (r) => COLORS[Math.max(0, st.rooms.indexOf(r)) % 4];
+  const HOUR = 44, BADGE = { prenotata: "info", completata: "good", annullata: "plain" };
+  const pending = S.artists.flatMap((a) => a.packages.filter((p) => !p.archived).flatMap((p) => p.items.filter((it) => !it.done && !S.sessions.some((x) => x.itemId === it.id && x.status === "prenotata")).map((it) => ({ a, it }))));
+  const label = (x) => esc(artistById(x.artistId)?.name ?? (x.title || "Sessione"));
+  return pageHead("Sale & sessioni", "Agenda", "Prenotazioni per sala e fonico. Quando una sessione collegata a un pacchetto viene completata, il servizio si spunta da solo.",
+    `<div class="segmented"><button type="button" data-action="week" data-v="-7">‹ Settimana prima</button><button type="button" data-action="week" data-v="0" aria-current="${week === weekStart(TODAY)}">Questa settimana</button><button type="button" data-action="week" data-v="7">Dopo ›</button></div>`) + `
+  <div class="grid cols-4">
+    ${stat("Saturazione settimana", fmtPct(ws.rate), `${ws.booked.toFixed(1).replace(".", ",")} h prenotate su ${ws.cap} h disponibili<div class="meter" style="margin-top:10px"><i style="width:${Math.min(100, ws.rate * 100)}%"></i></div>`)}
+    ${stat("Saturazione del mese", fmtPct(ms.rate), `${Math.round(ms.cap - ms.booked)} ore di sala ancora vendibili`)}
+    ${stat("Sessioni in arrivo", ses.filter((x) => x.status === "prenotata" && x.date >= TODAY).length, "da oggi a fine settimana")}
+    ${stat("Fasce quasi sempre vuote", empties, "ore/settimana sotto il 15% di occupazione")}
+  </div>
+  <section class="card flush mt"><div class="card-head" style="padding:20px 22px 0"><h3>Settimana dal ${new Date(`${week}T12:00:00`).toLocaleDateString("it-IT", { day: "numeric", month: "long" })}</h3><div class="legend">${st.rooms.map((r) => `<span><i style="background:${rc(r)}"></i>${esc(r)}</span>`).join("")}</div></div>
+    <div class="week-scroll" style="padding:8px 12px 16px"><div class="week" style="--days:${shown.length};--hour-h:${HOUR}px">
+      <div></div>${shown.map((d) => `<div class="week-head ${d === TODAY ? "today" : ""}"><span>${WEEKDAYS[dowOf(d)]} ${Number(d.slice(8))}</span></div>`).join("")}
+      <div class="hours-col">${hours.map((h) => `<div>${h}:00</div>`).join("")}</div>
+      ${shown.map((d) => `<div class="day-col ${st.openDays.includes(dowOf(d) + 1) ? "" : "closed"}" style="height:${hours.length * HOUR}px">${ses.filter((x) => x.date === d).map((x) => {
+        const n = st.rooms.length, ri = Math.max(0, st.rooms.indexOf(x.room)), top = ((mins(x.start) - st.openHour * 60) / 60) * HOUR, h = Math.max(22, hoursOf(x) * HOUR - 2);
+        const svc = x.itemId ? itemInfo(x.itemId)?.it.service : x.title;
+        return `<a href="#agenda" data-action="goto-session" data-id="${x.id}" class="slot ${x.status === "completata" ? "done" : x.status === "annullata" ? "cancelled" : ""}" style="--c:${rc(x.room)};top:${top}px;height:${h}px;left:calc(${(ri / n) * 100}% + 3px);right:calc(${((n - ri - 1) / n) * 100}% + 3px)" title="${x.start}–${x.end} · ${esc(x.room)}">
+          <span class="t">${x.start}${x.status === "completata" ? " ✓" : ""}</span><b>${label(x)}</b>${h > 50 ? `<span class="t">${esc(svc || "")}${svc ? " · " : ""}${x.engineer}</span>` : ""}</a>`;
+      }).join("")}</div>`).join("")}
+    </div></div></section>
+  <div class="grid cols-3 mt" style="align-items:start">
+    <section class="card span-2 flush"><div class="card-head" style="padding:20px 22px 0"><h3>Sessioni della settimana</h3></div>
+      ${ses.length === 0 ? empty("◷", "Nessuna sessione in questa settimana", "Prenota la prima dal modulo qui accanto.") : `<div class="table-wrap" style="margin-top:8px"><table class="table"><thead><tr><th>Quando</th><th>Artista / servizio</th><th>Sala · fonico</th><th>Stato</th><th></th></tr></thead><tbody>
+      ${ses.map((x) => { const info = x.itemId ? itemInfo(x.itemId) : null; return `<tr id="sessione-${x.id}"><td class="num" style="white-space:nowrap">${WEEKDAYS[dowOf(x.date)]} ${Number(x.date.slice(8))}<div class="xs faint">${x.start}–${x.end}</div></td>
+        <td><div style="font-weight:600">${label(x)}</div><div class="xs faint">${info ? `Dal pacchetto: ${esc(info.it.service)}` : esc(x.title) || "Fuori pacchetto"}</div></td>
+        <td class="small"><span class="legend"><span><i style="background:${rc(x.room)}"></i>${esc(x.room)}</span></span><div class="xs faint">${x.engineer || "—"}</div></td>
+        <td>${badge(BADGE[x.status], x.status)}</td>
+        <td class="right" style="white-space:nowrap">${x.status === "prenotata" ? `<button class="btn btn-sm" data-action="session" data-v="completata" data-id="${x.id}">✓ Completata</button><button class="btn btn-ghost btn-sm" data-action="session" data-v="annullata" data-id="${x.id}">Annulla</button>` : `<button class="btn btn-ghost btn-sm" data-action="session" data-v="prenotata" data-id="${x.id}">Ripristina</button>`}<button class="btn btn-ghost btn-sm btn-danger" data-action="session-del" data-id="${x.id}" aria-label="Elimina sessione">✕</button></td></tr>`; }).join("")}
+      </tbody></table></div>`}</section>
+    <section class="card"><div class="card-head"><h3>Prenota una sessione</h3></div>
+      <form data-form="session" class="stack">
+        <div class="form-grid"><label class="field" for="s-date"><span>Giorno</span><input id="s-date" class="input" type="date" name="date" value="${TODAY < week ? week : TODAY}" required></label>
+          <label class="field" for="s-room"><span>Sala</span><select id="s-room" class="input" name="room">${st.rooms.map((r) => `<option>${esc(r)}</option>`).join("")}</select></label></div>
+        <div class="form-grid"><label class="field" for="s-start"><span>Inizio</span><input id="s-start" class="input" type="time" name="start" value="15:00" step="900" required></label>
+          <label class="field" for="s-end"><span>Fine</span><input id="s-end" class="input" type="time" name="end" value="18:00" step="900" required></label></div>
+        <label class="field" for="s-item"><span>Servizio del pacchetto</span><select id="s-item" class="input" name="item"><option value="">— Nessuno (sessione fuori pacchetto) —</option>
+          ${[...new Set(pending.map((x) => x.a))].map((a) => `<optgroup label="${esc(a.name)}">${pending.filter((x) => x.a === a).map((x) => `<option value="${x.it.id}">${esc(x.it.service)}</option>`).join("")}</optgroup>`).join("")}</select></label>
+        <label class="field" for="s-artist"><span>Artista (se fuori pacchetto)</span><select id="s-artist" class="input" name="artist"><option value="">—</option>${S.artists.map((a) => `<option value="${a.id}">${esc(a.name)}</option>`).join("")}</select></label>
+        <div class="form-grid"><label class="field" for="s-eng"><span>Fonico</span><select id="s-eng" class="input" name="engineer">${PARTNERS.map((p) => `<option ${p === S.user ? "selected" : ""}>${p}</option>`).join("")}</select></label>
+          <label class="field" for="s-title"><span>Nota</span><input id="s-title" class="input" name="title" placeholder="Es. provino voce"></label></div>
+        <div id="session-error" class="notice critical" role="alert" hidden></div>
+        <button class="btn btn-chrome" type="submit">Prenota</button>
+      </form></section>
+  </div>
+  <section class="card mt"><div class="card-head"><h3>Fasce orarie: occupazione media delle ultime 8 settimane</h3><span class="xs faint">0%<span class="legend-ramp"></span>100%</span></div>
+    <div class="table-wrap"><div class="heat" style="grid-template-columns:44px repeat(${hours.length}, minmax(26px, 1fr));min-width:${44 + hours.length * 29}px">
+      <div></div>${hours.map((h) => `<div class="lbl" style="justify-content:center">${h}</div>`).join("")}
+      ${hdays.map((d) => `<div class="lbl">${WEEKDAYS[d]}</div>${hours.map((h) => { const r = heat(d, h); return `<div class="cell" style="--a:${0.05 + r * 0.95}" title="${WEEKDAYS[d]} ${h}:00 · occupata ${Math.round(r * 100)}% delle volte"></div>`; }).join("")}`).join("")}
+    </div></div>
+    <p class="xs faint" style="margin-bottom:0">Le celle chiare sono le ore che restano libere: buone candidate per tariffe scontate o sessioni promozionali.</p></section>`;
+}
+
+function incassi() {
+  const money = packageMoney(), recv = money.filter((x) => x.outstanding > 0).sort((a, b) => b.daysLate - a.daysLate || (a.p.due ?? "9999").localeCompare(b.p.due ?? "9999"));
+  const late = recv.filter((x) => x.daysLate > 0), pre = money.filter((x) => x.prepaidOwed > 0 && !x.p.archived).sort((a, b) => b.prepaidOwed - a.prepaidOwed);
+  const preTot = pre.reduce((a, x) => a + x.prepaidOwed, 0);
+  const pays = S.artists.flatMap((a) => a.packages.flatMap((p) => p.payments.map((x) => ({ ...x, a, p })))).sort((x, y) => y.date.localeCompare(x.date)).slice(0, 15);
+  const METHOD = { bonifico: "Bonifico", contanti: "Contanti", pos: "POS / carta" };
+  return pageHead("Acconti, saldi e crediti", "Incassi", "Cosa vi devono gli artisti e cosa avete già incassato ma dovete ancora erogare. I pagamenti si registrano dalla scheda di ogni pacchetto in Artisti.", `<a class="btn btn-chrome" href="#artisti">Registra un pagamento</a>`) + `
+  <div class="grid cols-4">
+    ${stat("Crediti da incassare", fmtEur(recv.reduce((a, x) => a + x.outstanding, 0)), `${recv.length} ${recv.length === 1 ? "pacchetto" : "pacchetti"} con saldo aperto`)}
+    ${stat("In ritardo", `<span class="${late.length ? "delta-down" : ""}">${fmtEur(late.reduce((a, x) => a + x.outstanding, 0))}</span>`, late.length ? `${late.length} ${late.length === 1 ? "pacchetto" : "pacchetti"} oltre la scadenza` : "Nessun ritardo")}
+    ${stat("Servizi prepagati da erogare", fmtEur(preTot), "già incassati, lavoro ancora da fare")}
+    ${stat("Incassato da pacchetti questo mese", fmtEur(pays.filter((x) => x.date.slice(0, 7) === TODAY.slice(0, 7)).reduce((a, x) => a + x.cents, 0)))}
+  </div>
+  <div class="grid cols-3 mt" style="align-items:start">
+    <section class="card span-2 flush"><div class="card-head" style="padding:20px 22px 0"><h3>Chi deve ancora pagare</h3></div>
+      ${recv.length === 0 ? empty("✓", "Nessun credito aperto", "Tutti i pacchetti sono saldati.") : `<div class="table-wrap" style="margin-top:8px"><table class="table"><thead><tr><th>Artista · pacchetto</th><th class="right">Prezzo</th><th class="right">Pagato</th><th class="right">Da incassare</th><th>Scadenza</th></tr></thead><tbody>
+      ${recv.map((x) => `<tr><td><a href="#artisti" style="font-weight:600">${esc(x.a.name)}</a><div class="xs faint">${esc(x.p.name)}</div><div class="meter" style="margin-top:6px;max-width:220px"><i style="width:${(x.paid / x.p.price) * 100}%"></i></div></td>
+        <td class="right num">${fmtEur(x.p.price)}</td><td class="right num muted">${fmtEur(x.paid)}</td><td class="right num" style="font-weight:600">${fmtEur(x.outstanding)}</td>
+        <td style="white-space:nowrap">${x.p.due ? (x.daysLate ? badge("critical", `${x.daysLate} gg di ritardo`) : `<span class="small muted">${fmtDate(x.p.due)}</span>`) : `<span class="xs faint">Non fissata</span>`}</td></tr>`).join("")}
+      </tbody></table></div>`}</section>
+    <section class="card"><div class="card-head"><h3>Lavoro già pagato da erogare</h3></div>
+      <p class="small muted" style="margin-top:-6px">Soldi in cassa che corrispondono a servizi non ancora fatti: non vanno considerati utile disponibile.</p>
+      ${pre.length === 0 ? `<div class="small faint">Nessun servizio prepagato in sospeso.</div>` : `<div class="stack small">${pre.map((x) => `<div><div class="row between"><span><strong style="font-weight:600">${esc(x.a.name)}</strong> <span class="faint xs">· ${x.done}/${x.total} erogati</span></span><span class="num">${fmtEur(x.prepaidOwed)}</span></div><div class="meter" style="margin-top:6px"><i style="width:${(x.prepaidOwed / preTot) * 100}%"></i></div></div>`).join("")}</div>`}
+    </section>
+  </div>
+  <section class="card flush mt"><div class="card-head" style="padding:20px 22px 0"><h3>Ultimi pagamenti registrati</h3></div>
+    <div class="table-wrap" style="margin-top:8px"><table class="table"><thead><tr><th>Data</th><th>Artista · pacchetto</th><th>Metodo</th><th class="right">Importo</th><th></th></tr></thead><tbody>
+    ${pays.map((x) => `<tr><td class="num muted">${fmtDate(x.date)}</td><td><div style="font-weight:600">${esc(x.a.name)}</div><div class="xs faint">${esc(x.p.name)} · registrato da ${x.by}</div></td><td class="small">${METHOD[x.method]}</td>
+      <td class="right num amount-in" style="font-weight:600">+${fmtEur(x.cents)}</td><td class="right"><button class="btn btn-ghost btn-sm btn-danger" data-action="pay-del" data-id="${x.id}" aria-label="Elimina pagamento">✕</button></td></tr>`).join("")}
+    </tbody></table></div></section>`;
+}
+
+function soci() {
+  const profit = months().reduce((a, m) => a + m.profit, 0), taxes = fiscal().est.total;
+  const prepaid = packageMoney().filter((x) => !x.p.archived).reduce((a, x) => a + x.prepaidOwed, 0), dist = Math.max(0, profit - taxes - prepaid);
+  const moves = S.moves.filter((m) => m.date.startsWith(String(YEAR))).sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+  const rows = PARTNERS.map((p) => {
+    const share = (S.settings.shares[p] ?? 0) / 100, w = moves.filter((m) => m.partner === p && m.kind === "prelievo").reduce((a, m) => a + m.cents, 0);
+    const v = moves.filter((m) => m.partner === p && m.kind === "versamento").reduce((a, m) => a + m.cents, 0), due = Math.round(dist * share);
+    return { p, share, due, w, v, bal: due - w + v, st: partnerStats(p) };
+  });
+  return pageHead(`Conto soci ${YEAR}`, "Soci", "Quanto spetta a ciascuno, quanto ha già prelevato e cosa ha portato allo studio. Le quote si cambiano in Impostazioni.") + `
+  <div class="grid cols-4">${stat("Utile netto dell'anno", fmtEur(profit), "entrate meno uscite registrate")}${stat("Tasse e contributi stimati", fmtEur(taxes), "da accantonare (forfettario)")}${stat("Lavoro prepagato da erogare", fmtEur(prepaid), "già incassato, non ancora guadagnato")}${stat("Utile distribuibile", fmtEur(dist), "al netto di tasse e prepagati")}</div>
+  <div class="grid cols-3 mt">${rows.map((r) => `<section class="card">
+    <div class="row" style="gap:12px"><span class="avatar" style="width:40px;height:40px;font-size:16px" aria-hidden="true">${r.p[0]}</span><div class="grow"><h2 class="title-l">${r.p}</h2><div class="xs faint">Quota ${(r.share * 100).toLocaleString("it-IT", { maximumFractionDigits: 2 })}%</div></div></div>
+    <div class="stack small mt">
+      <div class="row between"><span class="muted">Spettante</span><span class="num">${fmtEur(r.due)}</span></div>
+      <div class="row between"><span class="muted">Prelievi</span><span class="num">−${fmtEur(r.w)}</span></div>
+      <div class="row between"><span class="muted">Versamenti</span><span class="num">+${fmtEur(r.v)}</span></div>
+      <div class="row between" style="padding-top:8px;border-top:1px solid var(--hairline)"><span style="font-weight:600">${r.bal >= 0 ? "Può ancora prelevare" : "Ha prelevato in più"}</span><span class="num ${r.bal < 0 ? "delta-down" : ""}" style="font-weight:650;font-size:17px">${fmtEur(Math.abs(r.bal))}</span></div>
+    </div>
+    <div class="grid mt" style="grid-template-columns:repeat(3,1fr);gap:8px">${[["Clienti portati", r.st.clients], ["Ore in sala", Math.round(r.st.hours)], ["Servizi erogati", r.st.services]].map(([l, v]) => `<div style="text-align:center;padding:10px 4px;border-radius:10px;background:rgba(255,255,255,.03);box-shadow:0 0 0 1px var(--hairline) inset"><div class="num" style="font-size:18px;font-weight:650">${v}</div><div class="xs faint">${l}</div></div>`).join("")}</div>
+  </section>`).join("")}</div>
+  <div class="grid cols-3 mt" style="align-items:start">
+    <section class="card span-2 flush"><div class="card-head" style="padding:20px 22px 0"><h3>Prelievi e versamenti</h3></div>
+      <div class="table-wrap" style="margin-top:8px;max-height:520px;overflow-y:auto"><table class="table"><thead><tr><th>Data</th><th>Socio</th><th>Tipo</th><th>Nota</th><th class="right">Importo</th><th></th></tr></thead><tbody>
+      ${moves.map((m) => `<tr><td class="num muted">${fmtDate(m.date)}</td><td style="font-weight:600">${m.partner}</td><td>${badge(m.kind === "prelievo" ? "warn" : "info", m.kind)}</td><td class="small muted">${esc(m.note) || "—"}</td><td class="right num" style="font-weight:600">${m.kind === "prelievo" ? "−" : "+"}${fmtEur(m.cents)}</td><td class="right"><button class="btn btn-ghost btn-sm btn-danger" data-action="move-del" data-id="${m.id}" aria-label="Elimina movimento">✕</button></td></tr>`).join("")}
+      </tbody></table></div></section>
+    <section class="card"><div class="card-head"><h3>Registra un movimento</h3></div>
+      <form data-form="move" class="stack">
+        <div class="segmented" style="width:100%"><label style="flex:1;text-align:center"><input type="radio" name="kind" value="prelievo" checked><span>Prelievo</span></label><label style="flex:1;text-align:center"><input type="radio" name="kind" value="versamento"><span>Versamento</span></label></div>
+        <div class="form-grid"><label class="field" for="m-p"><span>Socio</span><select id="m-p" class="input" name="partner">${PARTNERS.map((p) => `<option ${p === S.user ? "selected" : ""}>${p}</option>`).join("")}</select></label><label class="field" for="m-a"><span>Importo (€)</span><input id="m-a" class="input num" name="amount" inputmode="decimal" required></label></div>
+        <div class="form-grid"><label class="field" for="m-d"><span>Data</span><input id="m-d" class="input" type="date" name="date" value="${TODAY}"></label><label class="field" for="m-n"><span>Nota</span><input id="m-n" class="input" name="note" placeholder="Es. compenso ottobre"></label></div>
+        <button class="btn btn-chrome" type="submit">Registra</button>
+      </form><p class="xs faint" style="margin-bottom:0">Calcolo indicativo: le regole definitive di ripartizione vanno concordate tra i soci e con il commercialista.</p></section>
+  </div>`;
+}
+
+function attrezzatura() {
+  const list = S.equipment.slice().sort((a, b) => a.cat.localeCompare(b.cat) || a.name.localeCompare(b.name)), alerts = eqAlerts();
+  return pageHead("Inventario", "Attrezzatura", "Valore dell'attrezzatura, ammortamento, manutenzioni periodiche e garanzie in scadenza.") + `
+  <div class="grid cols-4">${stat("Pezzi in inventario", list.length)}${stat("Valore d'acquisto", fmtEur(list.reduce((a, e) => a + e.cents, 0)))}${stat("Valore residuo stimato", fmtEur(list.reduce((a, e) => a + residual(e), 0)), "ammortamento lineare")}${stat("Da controllare", `<span class="${alerts.some((x) => x.late) ? "delta-down" : ""}">${alerts.length}</span>`, "manutenzioni e garanzie in scadenza")}</div>
+  ${alerts.length ? `<div class="stack mt">${alerts.map((x) => `<div class="upsell-banner ${x.late ? "" : "soon"}"><span aria-hidden="true">${x.kind === "manutenzione" ? "⚙" : "⏳"}</span><span class="grow"><strong style="font-weight:600">${esc(x.e.name)}</strong> · ${x.kind === "manutenzione" ? (x.late ? `manutenzione scaduta dal ${fmtDate(x.date)}` : `manutenzione entro il ${fmtDate(x.date)}`) : `garanzia fino al ${fmtDate(x.date)}`}</span>${x.kind === "manutenzione" ? `<button class="btn btn-sm btn-chrome" data-action="eq-service" data-id="${x.e.id}">Fatta oggi</button>` : ""}</div>`).join("")}</div>` : ""}
+  <div class="grid cols-3 mt" style="align-items:start">
+    <section class="card span-2 flush"><div class="card-head" style="padding:20px 22px 0"><h3>Inventario</h3></div>
+      ${list.length === 0 ? empty("◎", "Inventario vuoto") : `<div class="table-wrap" style="margin-top:8px"><table class="table"><thead><tr><th>Attrezzatura</th><th class="right">Acquisto</th><th class="right">Valore oggi</th><th>Prossima manutenzione</th><th>Garanzia</th><th></th></tr></thead><tbody>
+      ${list.map((e) => { const ns = nextService(e); return `<tr><td><div style="font-weight:600">${esc(e.name)}</div><div class="xs faint">${esc(e.cat)} · dal ${fmtDate(e.purchase)}</div></td><td class="right num muted">${fmtEur(e.cents)}</td><td class="right num">${fmtEur(residual(e))}</td>
+        <td class="small">${ns ? `<span class="${ns < TODAY ? "delta-down" : ""}">${fmtDate(ns)}</span>` : `<span class="faint">—</span>`}</td><td class="small">${e.warranty ? (e.warranty < TODAY ? `<span class="faint">Scaduta</span>` : fmtDate(e.warranty)) : `<span class="faint">—</span>`}</td>
+        <td class="right" style="white-space:nowrap">${e.every ? `<button class="btn btn-ghost btn-sm" data-action="eq-service" data-id="${e.id}" title="Segna manutenzione fatta oggi">⚙</button>` : ""}<button class="btn btn-ghost btn-sm btn-danger" data-action="eq-del" data-id="${e.id}" aria-label="Elimina">✕</button></td></tr>`; }).join("")}
+      </tbody></table></div>`}</section>
+    <section class="card"><div class="card-head"><h3>Aggiungi attrezzatura</h3></div>
+      <form data-form="equipment" class="stack">
+        <label class="field" for="e-n"><span>Nome *</span><input id="e-n" class="input" name="name" required placeholder="Es. Shure SM7B"></label>
+        <div class="form-grid"><label class="field" for="e-c"><span>Categoria</span><select id="e-c" class="input" name="cat">${EQ_CATS.map((c) => `<option>${c}</option>`).join("")}</select></label><label class="field" for="e-k"><span>Costo (€)</span><input id="e-k" class="input num" name="cost" inputmode="decimal"></label></div>
+        <div class="form-grid"><label class="field" for="e-d"><span>Acquistato il</span><input id="e-d" class="input" type="date" name="purchase" value="${TODAY}"></label><label class="field" for="e-l"><span>Ammortamento (anni)</span><input id="e-l" class="input num" type="number" name="life" min="1" max="20" value="5"></label></div>
+        <div class="form-grid"><label class="field" for="e-w"><span>Garanzia fino al</span><input id="e-w" class="input" type="date" name="warranty"></label><label class="field" for="e-s"><span>Manutenzione ogni (mesi)</span><input id="e-s" class="input num" type="number" name="every" min="0" max="60" placeholder="—"></label></div>
+        <button class="btn btn-chrome" type="submit">Aggiungi</button>
+      </form></section>
+  </div>`;
+}
+
+function impostazioni() {
+  const st = S.settings, t = st.tax;
   const card = (title, status, cls, body) => `<section class="card"><div class="card-head"><h3>${title}</h3>${badge(cls, status)}</div><p class="small muted" style="margin-top:-6px">${body}</p></section>`;
-  return pageHead("Connessioni", "Integrazioni", "Stato delle sorgenti dati collegate all'hub. Nella demo sono simulate; nella versione reale si configurano sul PC dello studio.") + `
+  return pageHead("Studio & connessioni", "Impostazioni", "Parametri dello studio (sale, orari, costi fissi, fisco, quote dei soci) e stato delle sorgenti dati collegate.") + `
+  <section class="card" style="margin-bottom:16px"><div class="card-head"><h3>Parametri dello studio</h3><span class="xs faint">Valori di esempio: adattateli ai vostri</span></div>
+    <form data-form="settings" class="stack">
+      <div class="grid cols-3">
+        <div class="stack"><div class="eyebrow">Sale e orari</div>
+          <label class="field" for="p-rooms"><span>Sale (separate da virgola)</span><input id="p-rooms" class="input" name="rooms" value="${esc(st.rooms.join(", "))}"></label>
+          <div class="form-grid"><label class="field" for="p-o"><span>Apertura (ora)</span><input id="p-o" class="input num" type="number" min="0" max="23" name="open" value="${st.openHour}"></label><label class="field" for="p-c"><span>Chiusura (ora)</span><input id="p-c" class="input num" type="number" min="1" max="24" name="close" value="${st.closeHour}"></label></div>
+          <div class="field"><span>Giorni di apertura</span><div class="segmented">${WEEKDAYS.map((d, i) => `<label><input type="checkbox" name="day${i + 1}" ${st.openDays.includes(i + 1) ? "checked" : ""}><span>${d}</span></label>`).join("")}</div></div></div>
+        <div class="stack"><div class="eyebrow">Costi fissi mensili · ${fmtEur(fixedTotal())}</div>
+          <label class="field" for="p-fc"><span>Una voce per riga: «Voce: importo»</span><textarea id="p-fc" class="input mono" name="fixed" rows="7">${esc(st.fixedCosts.map(([l, c]) => `${l}: ${(c / 100).toLocaleString("it-IT")}`).join("\n"))}</textarea></label></div>
+        <div class="stack"><div class="eyebrow">Fisco · regime forfettario</div>
+          <div class="form-grid">
+            <label class="field" for="p-co"><span>Coefficiente redditività %</span><input id="p-co" class="input num" name="coefficient" value="${String(t.coefficient * 100).replace(".", ",")}"></label>
+            <label class="field" for="p-su"><span>Imposta sostitutiva %</span><input id="p-su" class="input num" name="substitute" value="${String(t.substituteRate * 100).replace(".", ",")}"></label>
+            <label class="field" for="p-in"><span>Contributi INPS %</span><input id="p-in" class="input num" name="inps" value="${String(Math.round(t.inpsRate * 10000) / 100).replace(".", ",")}"></label>
+            <label class="field" for="p-th"><span>Soglia ricavi (€)</span><input id="p-th" class="input num" name="threshold" value="${t.threshold}"></label>
+            <label class="field" for="p-v"><span>Partite IVA</span><input id="p-v" class="input num" type="number" min="1" max="10" name="vat" value="${t.vatNumbers}"></label></div>
+          <div class="eyebrow" style="margin-top:6px">Quote soci %</div>
+          <div class="form-grid">${PARTNERS.map((p) => `<label class="field" for="p-s-${p}"><span>${p}</span><input id="p-s-${p}" class="input num" name="share-${p}" value="${String(st.shares[p]).replace(".", ",")}"></label>`).join("")}</div></div>
+      </div>
+      <div class="row between" style="flex-wrap:wrap;gap:12px"><span class="xs faint">Coefficiente 67% e INPS 26,07% sono valori tipici ma dipendono dal codice ATECO e dalla gestione previdenziale: verificateli con il commercialista. Imposta al 5% per i primi 5 anni di attività.</span>
+        <button class="btn btn-chrome" type="submit">Salva parametri</button></div>
+      <div id="settings-msg" class="notice" role="status" hidden></div>
+    </form></section>
   <div class="grid cols-2">
     ${card("Conto bancario aziendale", "Import CSV", "info", "L'estratto conto dell'home banking si carica in Finanza: categorie automatiche, nessun doppione se ricarichi un periodo già importato.")}
     ${card("Google Drive · anagrafiche clienti", "Collegato", "good", "Legge i fogli clienti nella cartella “Backrooms – CRM” e li porta nel CRM ogni mattina.")}
@@ -867,11 +1306,10 @@ function integrazioni() {
     ${card("TikTok", "In revisione", "warn", "Collegamento in attesa dell'approvazione di TikTok: nel frattempo i numeri si inseriscono a mano.")}
     ${card("Sito web · Google Analytics 4", "Collegato", "good", "Visitatori unici, sessioni, tasso di interazione e clic sul sito.")}
     ${card("Candidature dal sito", "Attivo", "good", "Ogni richiesta dal form del sito arriva nel report giornaliero e nel CRM come nuovo contatto.")}
-  </div>
-  <section class="card mt"><div class="card-head"><h3>Automazione giornaliera</h3></div><div class="small muted">Ogni giorno alle 6:00 l'hub aggiorna Drive, social e sito con i dati del giorno precedente.</div></section>`;
+  </div>`;
 }
 
-const SCREENS = { panoramica, finanza, crm, artisti, analytics, insights, integrazioni };
+const SCREENS = { panoramica, agenda, finanza, incassi, crm, artisti, analytics, soci, attrezzatura, insights, impostazioni };
 
 // ─── render loop ────────────────────────────────────────────────────────────
 const app = document.getElementById("app");
@@ -914,7 +1352,7 @@ document.addEventListener("click", (e) => {
     case "lead-del": S.leads = S.leads.filter((l) => l.id !== id); toast("Contatto eliminato."); break;
     case "lead-convert": {
       const l = S.leads.find((x) => x.id === id); l.status = "convertito";
-      const art = { id: uid++, name: l.name, email: l.email, phone: l.phone, ig: l.ig ? `@${l.ig.replace(/^@/, "")}` : "", packages: [] };
+      const art = { id: uid++, name: l.name, email: l.email, phone: l.phone, ig: l.ig ? `@${l.ig.replace(/^@/, "")}` : "", channel: l.channel, ref: l.ref, packages: [], tracks: [] };
       S.artists.push(art); toast(`${l.name} è ora un artista: assegnagli un pacchetto.`);
       location.hash = "artisti"; setTimeout(() => { const d = document.getElementById(`pkg-${art.id}`); if (d) { d.open = true; d.scrollIntoView({ behavior: "smooth", block: "center" }); } }, 50);
       return;
@@ -928,6 +1366,33 @@ document.addEventListener("click", (e) => {
       f.elements.name.value = p.name; f.elements.price.value = p.price;
       SERVICES.forEach((sv) => (f.elements[`qty:${sv}`].value = p.items.find(([s]) => s === sv)?.[1] ?? 0));
       return;
+    }
+    case "week": V.week = v === "0" ? null : addDays(V.week ?? weekStart(TODAY), Number(v)); break;
+    case "goto-session": e.preventDefault(); document.getElementById(`sessione-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" }); return;
+    case "session": {
+      const x = S.sessions.find((y) => y.id === id); x.status = v;
+      if (x.itemId) { const info = itemInfo(x.itemId); if (info) { info.it.done = v === "completata"; info.it.by = info.it.done ? x.engineer || S.user : ""; info.it.at = info.it.done ? TODAY : ""; } }
+      toast(v === "completata" ? (x.itemId ? "Sessione completata: servizio spuntato nel pacchetto." : "Sessione completata.") : v === "annullata" ? "Sessione annullata." : "Sessione ripristinata.");
+      break;
+    }
+    case "session-del": S.sessions = S.sessions.filter((x) => x.id !== id); toast("Sessione eliminata."); break;
+    case "pay-del": for (const a of S.artists) for (const p of a.packages) { const x = p.payments.find((y) => y.id === id); if (x) { p.payments = p.payments.filter((y) => y.id !== id); if (x.txId) S.tx = S.tx.filter((t) => t.id !== x.txId); } } toast("Pagamento eliminato."); break;
+    case "move-del": S.moves = S.moves.filter((m) => m.id !== id); toast("Movimento eliminato."); break;
+    case "eq-service": S.equipment.find((x) => x.id === id).last = TODAY; toast("Manutenzione registrata oggi."); break;
+    case "eq-del": S.equipment = S.equipment.filter((x) => x.id !== id); toast("Tolto dall'inventario."); break;
+    case "track": {
+      for (const a of S.artists) { const t = (a.tracks ?? []).find((x) => x.id === id); if (!t) continue;
+        const op = el.dataset.op;
+        if (op === "del") a.tracks = a.tracks.filter((x) => x.id !== id);
+        else if (op === "rev") { t.revs++; t.stage = Math.max(t.stage, 2); }
+        else t.stage = Math.max(0, Math.min(4, t.stage + (op === "back" ? -1 : 1)));
+      }
+      break;
+    }
+    case "lead-contacted": {
+      const l = S.leads.find((x) => x.id === id); l.last = TODAY; if (l.status === "nuovo") l.status = "contattato";
+      if (l.nextDate && l.nextDate <= TODAY) { l.next = ""; l.nextDate = null; }
+      toast(`${l.name}: contatto registrato.`); break;
     }
     case "note-cat": V.noteCat = v; break;
     case "note-pin": { const n = S.notes.find((x) => x.id === id); n.pinned = !n.pinned; break; }
@@ -965,15 +1430,76 @@ document.addEventListener("submit", (e) => {
       S.view.finMonth = Number((d.date || TODAY).slice(5, 7));
       toast(`${out ? "Uscita" : "Entrata"} in contanti registrata: guarda il grafico.`); break;
     }
-    case "lead": S.leads.push({ id: uid++, name: d.name, email: d.email, phone: d.phone, ig: d.ig, genre: d.genre, notes: d.notes, source: "manuale", status: "nuovo", created: TODAY }); toast(`${d.name} aggiunto alla pipeline.`); break;
-    case "artist": S.artists.push({ id: uid++, name: d.name, email: d.email, phone: d.phone, ig: d.ig, packages: [] }); toast(`${d.name} aggiunto.`); break;
+    case "lead": S.leads.push({ id: uid++, name: d.name, email: d.email, phone: d.phone, ig: d.ig, genre: d.genre, notes: d.notes, source: "manuale", status: "nuovo", channel: d.channel, ref: d.ref, next: "", nextDate: null, last: null, created: TODAY }); toast(`${d.name} aggiunto alla pipeline.`); break;
+    case "artist": S.artists.push({ id: uid++, name: d.name, email: d.email, phone: d.phone, ig: d.ig, channel: d.channel, ref: d.ref, packages: [], tracks: [] }); toast(`${d.name} aggiunto.`); break;
+    case "lead-channel": { const l = S.leads.find((x) => x.id === Number(f.dataset.id)); l.channel = d.channel; l.ref = d.ref; toast("Provenienza aggiornata."); break; }
+    case "lead-followup": { const l = S.leads.find((x) => x.id === Number(f.dataset.id)); l.next = d.next; l.nextDate = d.nextDate || null; toast("Prossima azione salvata."); break; }
+    case "payment": {
+      const c = parseEuro(d.amount); if (!c || c <= 0) return toast("Inserisci un importo valido.");
+      const pk = S.artists.flatMap((a) => a.packages.map((p) => ({ a, p }))).find((x) => x.p.id === Number(f.dataset.id));
+      const pay = { id: uid++, date: d.date || TODAY, cents: c, method: d.method, by: S.user };
+      if (d.method === "contanti") { pay.txId = uid++; S.tx.push({ id: pay.txId, date: pay.date, cents: c, desc: `${pk.p.name} — ${pk.a.name}`, cat: "Pacchetti", source: "cash", by: S.user }); }
+      pk.p.payments.push(pay); S.view.openPay = pk.p.id;
+      toast(d.method === "contanti" ? "Pagamento registrato e aggiunto ai movimenti in contanti." : "Pagamento registrato."); break;
+    }
+    case "pkg-due": { const pk = S.artists.flatMap((a) => a.packages).find((p) => p.id === Number(f.dataset.id)); pk.due = d.due || null; S.view.openPay = pk.id; toast("Scadenza salvata."); break; }
+    case "track": { const a = S.artists.find((x) => x.id === Number(f.dataset.id)); (a.tracks ??= []).push({ id: uid++, title: d.title, stage: 0, revs: 0, due: d.due || null, url: "" }); toast(`“${d.title}” aggiunto.`); break; }
+    case "session": {
+      const err = document.getElementById("session-error");
+      const fail = (msg) => { err.textContent = msg; err.hidden = false; };
+      if (!d.date || !d.start || !d.end) return fail("Indica data, ora di inizio e di fine.");
+      if (d.end <= d.start) return fail("L'orario di fine deve essere dopo l'inizio.");
+      const clash = S.sessions.find((x) => x.date === d.date && x.room === d.room && x.status !== "annullata" && x.start < d.end && x.end > d.start);
+      if (clash) return fail(`${d.room} è già occupata dalle ${clash.start} alle ${clash.end}.`);
+      const itemId = Number(d.item) || null, info = itemId ? itemInfo(itemId) : null;
+      S.sessions.push({ id: uid++, date: d.date, start: d.start, end: d.end, room: d.room, engineer: d.engineer, artistId: info ? info.a.id : Number(d.artist) || null, itemId, title: d.title, status: "prenotata" });
+      S.view.week = weekStart(d.date) === weekStart(TODAY) ? null : weekStart(d.date);
+      toast("Sessione prenotata."); break;
+    }
+    case "move": {
+      const c = parseEuro(d.amount); if (!c || c <= 0) return toast("Inserisci un importo valido.");
+      S.moves.push({ id: uid++, date: d.date || TODAY, partner: d.partner, kind: d.kind, cents: c, note: d.note }); toast("Movimento registrato."); break;
+    }
+    case "equipment": {
+      const months = Number(d.every);
+      S.equipment.push({ id: uid++, name: d.name, cat: d.cat, purchase: d.purchase || TODAY, cents: Math.max(0, parseEuro(d.cost || "0") ?? 0), life: Math.min(20, Math.max(1, Number(d.life) || 5)), warranty: d.warranty || null, every: months > 0 ? months : null, last: null, notes: "" });
+      toast(`${d.name} aggiunto all'inventario.`); break;
+    }
+    case "settings": {
+      const msg = document.getElementById("settings-msg");
+      const fail = (m) => { msg.textContent = m; msg.className = "notice critical"; msg.hidden = false; };
+      const num = (v) => Number(String(v).replace(",", "."));
+      const open = Math.round(num(d.open)), close = Math.round(num(d.close));
+      if (!(open >= 0 && close <= 24 && close > open)) return fail("Orari non validi: la chiusura deve essere dopo l'apertura.");
+      const shares = Object.fromEntries(PARTNERS.map((p) => [p, num(d[`share-${p}`])]));
+      const tot = Object.values(shares).reduce((a, b) => a + b, 0);
+      if (Math.abs(tot - 100) > 0.5) return fail(`Le quote dei soci devono sommare 100% (ora ${tot.toFixed(1).replace(".", ",")}%).`);
+      const rooms = d.rooms.split(",").map((r) => r.trim()).filter(Boolean);
+      const pct = (v, fb) => { const n = num(v); return Number.isFinite(n) && n >= 0 && n <= 100 ? n / 100 : fb; };
+      const st = S.settings;
+      Object.assign(st, {
+        rooms: rooms.length ? rooms : st.rooms, openHour: open, closeHour: close,
+        openDays: [1, 2, 3, 4, 5, 6, 7].filter((i) => d[`day${i}`] === "on"),
+        fixedCosts: d.fixed.split(/\r?\n/).map((l) => l.split(/[:=]/)).filter((x) => x.length >= 2 && x[0].trim()).map(([l, ...r]) => [l.trim(), Math.max(0, parseEuro(r.join(":")) ?? 0)]),
+        tax: { coefficient: pct(d.coefficient, st.tax.coefficient), substituteRate: pct(d.substitute, st.tax.substituteRate), inpsRate: pct(d.inps, st.tax.inpsRate), threshold: num(d.threshold) || st.tax.threshold, vatNumbers: Math.max(1, Math.round(num(d.vat)) || st.tax.vatNumbers) },
+        shares,
+      });
+      toast("Parametri salvati: tasse, pareggio e quote ricalcolati."); break;
+    }
     case "package": {
       const items = [];
       SERVICES.forEach((sv) => { const q = Math.min(50, Math.max(0, Number(d[`qty:${sv}`]) || 0)); for (let i = 0; i < q; i++) items.push({ id: uid++, service: q > 1 ? `${sv} ${i + 1}/${q}` : sv, done: false, by: "", at: "" }); });
       if (!items.length) return toast("Aggiungi almeno un servizio al pacchetto.");
       const a = S.artists.find((x) => x.id === Number(f.dataset.id));
       a.packages.forEach((p) => { if (p.items.every((i) => i.done)) p.archived = true; });
-      a.packages.unshift({ id: uid++, name: d.name || "Pacchetto personalizzato", price: Math.max(0, parseEuro(d.price || "0") ?? 0), purchased: TODAY, archived: false, items });
+      const pk = { id: uid++, name: d.name || "Pacchetto personalizzato", price: Math.max(0, parseEuro(d.price || "0") ?? 0), purchased: TODAY, due: d.due || null, archived: false, items, payments: [] };
+      const dep = parseEuro(d.deposit || "0");
+      if (dep && dep > 0) {
+        const pay = { id: uid++, date: TODAY, cents: dep, method: d.depositMethod, by: S.user };
+        if (d.depositMethod === "contanti") { pay.txId = uid++; S.tx.push({ id: pay.txId, date: TODAY, cents: dep, desc: `${pk.name} — ${a.name}`, cat: "Pacchetti", source: "cash", by: S.user }); }
+        pk.payments.push(pay);
+      }
+      a.packages.unshift(pk);
       toast(`Pacchetto assegnato a ${a.name}.`); break;
     }
     case "note": S.notes.push({ id: uid++, title: d.title, body: d.body, cat: d.cat, pinned: false, done: false, due: d.due || null, author: S.user, updated: TODAY }); toast("Nota aggiunta alla bacheca."); break;

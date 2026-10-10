@@ -32,8 +32,8 @@ export default async function IncassiPage() {
       />
 
       <div className="grid cols-4">
-        <Stat label="Crediti da incassare" value={fmtEur(outstanding)} sub={`${receivables.length} pacchetti con saldo aperto`} />
-        <Stat label="In ritardo" value={<span className={late.length ? "delta-down" : ""}>{fmtEur(late.reduce((a, m) => a + m.outstanding, 0))}</span>} sub={late.length ? `${late.length} pacchetti oltre la scadenza` : "Nessun ritardo"} />
+        <Stat label="Crediti da incassare" value={fmtEur(outstanding)} sub={`${receivables.length} ${receivables.length === 1 ? "pacchetto" : "pacchetti"} con saldo aperto`} />
+        <Stat label="In ritardo" value={<span className={late.length ? "delta-down" : ""}>{fmtEur(late.reduce((a, m) => a + m.outstanding, 0))}</span>} sub={late.length ? `${late.length} ${late.length === 1 ? "pacchetto" : "pacchetti"} oltre la scadenza` : "Nessun ritardo"} />
         <Stat label="Servizi prepagati da erogare" value={fmtEur(prepaidTotal)} sub="già incassati, lavoro ancora da fare" />
         <Stat label="Incassato da pacchetti questo mese" value={fmtEur(monthPaid)} />
       </div>
