@@ -8,7 +8,7 @@ Stack: Next.js 15 (App Router, server actions) · React 19 · SQLite integrato i
 
 | Sezione | Cosa fa |
 |---|---|
-| **Accesso** | Master password condivisa (hash scrypt), selezione del socio al login, sessione firmata HS256 in cookie `httpOnly` + `SameSite=Strict` (12 h), blocco di 15 min dopo 5 tentativi errati, `noindex` ovunque. |
+| **Accesso** | Password personale per ogni socio (oppure una condivisa), salvate solo come hash scrypt; selezione del socio al login, sessione firmata HS256 in cookie `httpOnly` + `SameSite=Strict` (12 h), blocco di 15 min dopo 5 tentativi errati, `noindex` ovunque. |
 | **Finanza** | Movimenti bancari via open banking PSD2 (GoCardless Bank Account Data), registrazione rapida dei contanti, import di estratti CSV come alternativa, categorie automatiche modificabili. Dashboard con grafico 3D (Entrate / Uscite / Utile per mese, e flusso di cassa cumulato), conto economico mensile con margini, ripartizione per categoria. |
 | **CRM** | Pipeline contatti (nuovo → contattato → in trattativa → convertito/perso). Sincronizzazione da Google Drive (Google Sheet o CSV nella cartella indicata); se non trova file la sezione resta vuota e pronta per l'inserimento manuale. Le candidature dal sito entrano qui in automatico. Un contatto si converte in artista con un clic. |
 | **Artisti** | Pacchetti di servizi per artista (preset o personalizzati), checklist da spuntare man mano che i servizi vengono erogati, anello con i servizi rimanenti. **Upsell**: "In esaurimento" quando resta ≤ 25 % (min. 1) dei servizi, "Esaurito" a 0; entrambi evidenziati in Artisti e nella Panoramica. |
@@ -23,7 +23,7 @@ Guida passo-passo a costo zero (PC dello studio + Tailscale): **[GUIDA-WINDOWS.m
 
 ```bash
 npm install
-npm run hash-password -- "la-vostra-master-password"   # stampa MASTER_PASSWORD_HASH e SESSION_SECRET
+npm run hash-password -- "la-password"                 # stampa un hash: mettilo in PASSWORD_HASH_<NOME> o MASTER_PASSWORD_HASH
 cp .env.example .env.local                              # incolla i due valori + PARTNERS
 npm run seed                                            # facoltativo: dati demo fittizi
 npm run dev                                             # http://localhost:3000

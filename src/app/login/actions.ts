@@ -3,7 +3,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { SESSION_COOKIE, SESSION_TTL_SECONDS, signSession } from "@/lib/session";
 import { clearFailures, isLocked, registerFailure, verifyPassword } from "@/lib/password";
-import { partners } from "@/lib/partners";
+import { partners, passwordHashFor } from "@/lib/partners";
 
 export type LoginState = { error?: string };
 
@@ -17,8 +17,8 @@ export async function login(_: LoginState, form: FormData): Promise<LoginState> 
   const partner = String(form.get("partner") ?? "");
   if (!partners().includes(partner)) return { error: "Seleziona chi sta accedendo." };
 
-  const hash = process.env.MASTER_PASSWORD_HASH;
-  if (!hash) return { error: "Master password non configurata sul server (MASTER_PASSWORD_HASH)." };
+  const hash = passwordHashFor(partner);
+  if (!hash) return { error: "Password non configurata sul server per questo socio." };
 
   if (!password || !verifyPassword(password, hash)) {
     registerFailure(ip);

@@ -20,8 +20,9 @@ Ordine consigliato e tempo stimato:
 
 ## 1 · Decisioni di base
 
-- [ ] **Nomi dei tre soci**, come compariranno al login (es. `Luca,Marco,Andrea`).
-- [ ] **Master password** condivisa: almeno 12 caratteri, meglio una frase (es. tre parole + numeri). Salvatela nel gestore di password. Verrà digitata solo durante l'installazione.
+- [x] **Soci:** Plugghe, Freya, Astral, ognuno con la **propria password**.
+- [x] **File di configurazione pronto** (`configurazione-hub.env`, consegnato in chat: contiene solo gli hash delle password, non le password). Il giorno dell'installazione va copiato in `C:\BackroomsHub\.env.local` **prima** di lanciare l'installer, che allora non chiede nulla.
+- [ ] Salvate le password nel gestore di password e cambiatele dopo il primo accesso (sono state scritte in chat). Freya e Astral oggi hanno la stessa password: meglio differenziarle.
 - [ ] **Computer finale**: Windows, deve restare acceso con l'alimentazione collegata.
 - [ ] **Accesso a GitHub** dal PC finale: chi installa deve poter accedere all'account `lucacappe0912-lang` (o essere aggiunto come collaboratore del repository: *Settings → Collaborators*).
 
@@ -126,7 +127,7 @@ Se volete farlo:
 1. [ ] Account TikTok dello studio: **Business** o **Creator**.
 2. [ ] <https://developers.tiktok.com> → accedete → **Manage apps → Connect an app**.
 3. [ ] Aggiungete i prodotti **Login Kit** e **Display API**; scope: `user.info.basic`, `user.info.stats`, `video.list`.
-4. [ ] Servono: icona (usate il logo), descrizione, **URL privacy policy** e **termini** (posso scriverveli io come pagine pubbliche).
+4. [ ] Servono: icona (usate il logo), descrizione, **URL privacy policy** e **termini**. Sono già pronte in `docs/pagine-legali/` (privacy.html, termini.html, in italiano e inglese): sostituite `EMAIL_DELLO_STUDIO` con l'email dello studio e pubblicatele sul sito (es. `tuosito.it/privacy`).
 5. [ ] Redirect URI: si inserisce dopo l'installazione (sarà `https://<indirizzo-tailscale>/api/tiktok/callback`), poi si invia l'app in revisione.
 6. [ ] Ad app approvata: in *Integrazioni* dell'hub → **Collega account TikTok**.
 
@@ -138,8 +139,7 @@ Se volete farlo:
 
 | Valore | Da dove | Obbligatorio |
 |---|---|---|
-| Nomi dei soci | punto 1 | sì |
-| Master password | punto 1 (la digitate voi nell'installer) | sì |
+| Nomi e password dei soci | già nel file `configurazione-hub.env` | sì |
 | `GOOGLE_DRIVE_FOLDER_ID` | 3a | per il CRM da Drive |
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | 3b | per Drive + Analytics |
 | `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` | 3b | per Drive + Analytics |
@@ -149,4 +149,4 @@ Se volete farlo:
 
 Tutto ciò che manca si può aggiungere anche dopo: si scrive in `C:\BackroomsHub\.env.local` e si riavvia l'hub. Le sezioni non configurate restano semplicemente disattivate.
 
-Il giorno dell'installazione: seguite `GUIDA-WINDOWS.md` dal punto 1, poi incollate i valori qui sopra in `.env.local`.
+Il giorno dell'installazione: seguite `GUIDA-WINDOWS.md` dal punto 1, copiate `configurazione-hub.env` come `.env.local`, aggiungete i valori qui sopra, poi lanciate l'installer.

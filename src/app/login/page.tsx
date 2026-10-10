@@ -12,7 +12,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <div className="card login-card">
         <LogoMark className="logo" height={96} />
         <h1 className="title-l chrome-text" style={{ marginBottom: 6 }}>Hub dei soci</h1>
-        <p className="muted small" style={{ margin: "0 0 26px" }}>Area riservata. Accesso solo per i fondatori.</p>
+        <p className="muted small" style={{ margin: "0 0 26px" }}>Area riservata ai soci fondatori.</p>
         <LoginForm partners={partners()} next={next ?? "/"} />
       </div>
     </main>

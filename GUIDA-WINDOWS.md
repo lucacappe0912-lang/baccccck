@@ -19,11 +19,12 @@ Servono: il PC dello studio che resta acceso, circa 20 minuti, una connessione i
 ## 2 · Installare
 
 1. Apri la cartella `C:\BackroomsHub` in Esplora file.
-2. Doppio clic su **`INSTALLA-WINDOWS.bat`**.
+2. Copia dentro il file **`configurazione-hub.env`** e rinominalo **`.env.local`** (con il punto iniziale; se Windows nasconde le estensioni: Esplora file → *Visualizza → Mostra → Estensioni nomi file*).
+3. Doppio clic su **`INSTALLA-WINDOWS.bat`**.
    - Se Windows mostra "PC protetto da Windows", clic su *Ulteriori informazioni* → *Esegui comunque*.
    - Se manca Node.js lo installa da solo: in quel caso **rilancia** `INSTALLA-WINDOWS.bat` quando te lo dice.
-3. Ti chiede i nomi dei tre soci e la **master password** (min. 12 caratteri, non scriverla da nessuna parte condivisa).
-4. Alla fine si apre il browser su `http://localhost:3000`: accedi.
+4. Se ha trovato `.env.local` non chiede nulla; altrimenti chiede i nomi dei soci e la password di ciascuno (min. 10 caratteri).
+5. Alla fine si apre il browser su `http://localhost:3000`: ogni socio sceglie il proprio nome e accede con la propria password.
 
 L'hub ora parte da solo a ogni accensione del PC (finestra "Backrooms Hub" ridotta a icona: **non chiuderla**).
 

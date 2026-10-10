@@ -30,19 +30,29 @@ if ($LASTEXITCODE -ne 0) { throw "npm ci non riuscito" }
 
 # 3. Configurazione
 Write-Host "[3/5] Configurazione"
-$partners = Read-Host "Nomi dei tre soci separati da virgola (es. Luca,Marco,Andrea)"
-do {
-  $p1 = Read-Host "Scegli la master password (min. 12 caratteri)" -AsSecureString
-  $p2 = Read-Host "Ripetila" -AsSecureString
-  $a = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($p1))
-  $b = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($p2))
-  if ($a -ne $b) { Write-Host "Le password non coincidono, riprova." -ForegroundColor Red }
-  elseif ($a.Length -lt 12) { Write-Host "Troppo corta, almeno 12 caratteri." -ForegroundColor Red }
-} while ($a -ne $b -or $a.Length -lt 12)
-$env:HUB_PASSWORD = $a
-$env:HUB_PARTNERS = $partners
-node scripts/create-env.mjs
-Remove-Item Env:HUB_PASSWORD; $a = $null; $b = $null
+$configured = (Test-Path ".env.local") -and (Select-String -Path ".env.local" -Pattern "^PASSWORD_HASH_[A-Z0-9_]+=scrypt:" -Quiet)
+if ($configured) {
+  Write-Host "      Trovata configurazione esistente (.env.local): la uso." -ForegroundColor Green
+  node scripts/create-env.mjs
+} else {
+  $partners = Read-Host "Nomi dei tre soci separati da virgola (es. Plugghe,Freya,Astral)"
+  $map = @{}
+  foreach ($name in ($partners -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_ })) {
+    do {
+      $p1 = Read-Host "Password di $name (min. 10 caratteri)" -AsSecureString
+      $p2 = Read-Host "Ripeti la password di $name" -AsSecureString
+      $a = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($p1))
+      $b = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($p2))
+      if ($a -ne $b) { Write-Host "Non coincidono, riprova." -ForegroundColor Red }
+      elseif ($a.Length -lt 10) { Write-Host "Troppo corta, almeno 10 caratteri." -ForegroundColor Red }
+    } while ($a -ne $b -or $a.Length -lt 10)
+    $map[$name] = $a
+  }
+  $env:HUB_PARTNERS = $partners
+  $env:HUB_PASSWORDS = ($map | ConvertTo-Json -Compress)
+  node scripts/create-env.mjs
+  Remove-Item Env:HUB_PASSWORDS; $map = $null; $a = $null; $b = $null
+}
 if ($LASTEXITCODE -ne 0) { throw "Configurazione non riuscita" }
 
 # 4. Build

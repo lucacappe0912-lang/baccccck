@@ -2,8 +2,8 @@
 import { randomBytes, scryptSync } from "node:crypto";
 
 const password = process.argv[2];
-if (!password || password.length < 12) {
-  console.error("Usa una master password di almeno 12 caratteri:  npm run hash-password -- \"…\"");
+if (!password || password.length < 10) {
+  console.error("Usa una master password di almeno 10 caratteri:  npm run hash-password -- \"…\"");
   process.exit(1);
 }
 const N = 2 ** 15;

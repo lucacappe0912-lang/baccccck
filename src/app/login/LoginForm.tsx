@@ -20,7 +20,7 @@ export function LoginForm({ partners, next }: { partners: string[]; next: string
         </div>
       </div>
       <label className="field">
-        <span>Master password</span>
+        <span>Password</span>
         <input className="input" type="password" name="password" autoComplete="current-password" required autoFocus />
       </label>
       {state.error && <div className="notice critical" role="alert">{state.error}</div>}
