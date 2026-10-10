@@ -13,6 +13,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <LogoMark className="logo" height={96} />
         <h1 className="title-l chrome-text" style={{ marginBottom: 6 }}>Hub dei soci</h1>
         <p className="muted small" style={{ margin: "0 0 26px" }}>Area riservata ai soci fondatori.</p>
+        {process.env.DEMO_MODE === "true" && (
+          <div className="notice warn small" style={{ marginBottom: 16 }}>
+            Modalità demo con dati inventati · password per tutti: <strong>backrooms-demo</strong>
+          </div>
+        )}
         <LoginForm partners={partners()} next={next ?? "/"} />
       </div>
     </main>
