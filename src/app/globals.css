@@ -131,7 +131,7 @@ h1, h2, h3, h4 { font-family: var(--font-display); margin: 0; font-weight: 600; 
   .shell { padding: 0 16px 64px; }
   .cols-2, .cols-3 { grid-template-columns: minmax(0, 1fr); }
   .cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .stat .value { font-size: 22px; }
+  .stat .value { font-size: 19px; overflow-wrap: anywhere; }
   .card { padding: 16px; }
   .span-2 { grid-column: auto; }
   .page-head { padding: 28px 0 20px; }
@@ -152,7 +152,11 @@ h1, h2, h3, h4 { font-family: var(--font-display); margin: 0; font-weight: 600; 
 }
 .topbar-inner { max-width: 1320px; margin: 0 auto; padding: 0 28px; height: 64px; display: flex; align-items: center; gap: 28px; }
 .brand { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-.brand img { height: 30px; width: auto; display: block; filter: drop-shadow(0 2px 10px rgba(255,255,255,.08)); }
+.brand img { display: block; filter: drop-shadow(0 2px 12px rgba(255,255,255,.12)); }
+.logo-lockup { display: flex; align-items: center; gap: 10px; }
+.logo-word { display: flex; flex-direction: column; line-height: 1; }
+.logo-word .chrome-text { font-family: var(--font-display); font-weight: 800; font-size: 15px; letter-spacing: 0.16em; }
+.logo-word small { font-size: 8.5px; font-weight: 600; letter-spacing: 0.52em; color: var(--text-3); margin-top: 4px; }
 .nav { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; flex: 1; }
 .nav::-webkit-scrollbar { display: none; }
 .nav a {
@@ -171,7 +175,8 @@ h1, h2, h3, h4 { font-family: var(--font-display); margin: 0; font-weight: 600; 
   .nav { order: 3; flex-basis: 100%; }
   .user-chip { margin-left: auto; }
   .user-chip .name { display: none; }
-  .brand img { height: 24px; }
+  .brand img { height: 28px !important; }
+  .logo-word { display: none; }
 }
 
 /* ─── Cards ───────────────────────────────────────────────────────────────── */
@@ -326,7 +331,8 @@ details.disclosure[open] > summary .chev { transform: rotate(90deg); }
 /* ─── Login ───────────────────────────────────────────────────────────────── */
 .login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; }
 .login-card { width: 100%; max-width: 400px; padding: 36px 30px; text-align: center; }
-.login-card .logo { height: 54px; margin: 0 auto 26px; display: block; }
+.login-card .logo { margin: 0 auto 22px; display: block; filter: drop-shadow(0 10px 30px rgba(255,255,255,.12)); animation: float 6s ease-in-out infinite; }
+@keyframes float { 50% { transform: translateY(-4px); } }
 .login-orb {
   position: fixed; width: 700px; height: 700px; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: -1; pointer-events: none;
   background: conic-gradient(from 180deg, rgba(255,255,255,.0), rgba(200,205,215,.10), rgba(255,255,255,0) 30%, rgba(144,133,233,.08) 60%, rgba(255,255,255,0));

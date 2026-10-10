@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: { default: "Backrooms Studio · Hub", template: "%s · Backrooms Hub" },
   description: "Hub gestionale interno di Backrooms Studio",
   robots: { index: false, follow: false },
-  icons: { icon: "/icon.svg" },
+  icons: { icon: "/icon.png", apple: "/apple-icon.png" },
 };
 
 export const viewport: Viewport = { themeColor: "#050506", colorScheme: "dark" };

@@ -71,7 +71,7 @@ Content-Type: application/json
 
 ## Logo
 
-Il logo nell'header e nel login è `public/logo.svg`, oggi un segnaposto cromato. Sostituisci il file con quello ufficiale (stesso nome). Se è un PNG, salvalo come `public/logo.png` e cambia il percorso in `src/components/Logo.tsx`.
+Il monogramma ufficiale è in `assets/logo-original.jpg`; `public/logo.png` è la versione scontornata (sfondo trasparente) usata nell'header e nel login, `public/icon.png` e `public/apple-icon.png` sono le icone. Per aggiornarlo sostituisci `public/logo.png` mantenendo lo sfondo trasparente.
 
 ## Struttura
 
