@@ -12,6 +12,8 @@ import {
 import { lastSync } from "@/lib/db";
 import { bankConfigured, currentBankLink } from "@/lib/integrations/gocardless";
 import { fmtDate, fmtEur, fmtPct, MONTHS_IT, today } from "@/lib/format";
+import { breakEven, channelRevenue, fiscalYear } from "@/lib/business";
+import { getSettings } from "@/lib/settings";
 import { Card, Empty, PageHead, Stat } from "@/components/ui";
 import { Finance3DLazy } from "@/components/Finance3DLazy";
 import { ActionButton, ActionForm } from "@/components/ActionForm";
@@ -41,6 +43,11 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
   const bal = balances();
   const bank = currentBankLink();
   const bankSync = lastSync("bank");
+  const settings = getSettings();
+  const fisc = fiscalYear(settings);
+  const be = breakEven(settings);
+  const channels = channelRevenue();
+  const maxChannel = Math.max(1, ...channels.map((c) => c.paid));
   const q = (p: Record<string, string | number | undefined>) => {
     const s = new URLSearchParams();
     const merged = { year, month, source, ...p };
@@ -80,6 +87,51 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
       <Card title={`Andamento mensile ${year}`} className="mt">
         <Finance3DLazy data={months} />
       </Card>
+
+      <div className="grid cols-3 mt" style={{ alignItems: "start" }}>
+        <Card title={`Tasse ${fisc.year} · regime forfettario`} actions={<a className="btn btn-sm btn-ghost" href="/impostazioni#parametri">Parametri</a>}>
+          <div className="stat"><div className="label">Da accantonare finora</div><div className="value">{fmtEur(fisc.estimate.total)}</div>
+            <div className="sub">Ogni 100 € incassati mettete da parte circa <strong style={{ color: "var(--text)" }}>{fisc.estimate.per100.toFixed(0)} €</strong></div></div>
+          <div className="stack small mt">
+            <div className="row between"><span className="muted">Ricavi incassati</span><span className="num">{fmtEur(fisc.revenue)}</span></div>
+            <div className="row between"><span className="muted">Reddito ({Math.round(settings.tax.coefficient * 100)}% dei ricavi)</span><span className="num">{fmtEur(fisc.estimate.taxableIncome)}</span></div>
+            <div className="row between"><span className="muted">Contributi INPS ({(settings.tax.inpsRate * 100).toFixed(2).replace(".", ",")}%)</span><span className="num">{fmtEur(fisc.estimate.contributions)}</span></div>
+            <div className="row between"><span className="muted">Imposta sostitutiva ({Math.round(settings.tax.substituteRate * 100)}%)</span><span className="num">{fmtEur(fisc.estimate.tax)}</span></div>
+          </div>
+          <div className="mt">
+            <div className="row between small"><span className="muted">Soglia {settings.tax.threshold.toLocaleString("it-IT")} € per partita IVA</span><span className="num">{fmtPct(fisc.perVat / fisc.thresholdCents)}</span></div>
+            <div className="meter" style={{ marginTop: 6 }}><i style={{ width: `${Math.min(100, (fisc.perVat / fisc.thresholdCents) * 100)}%`, background: fisc.perVat / fisc.thresholdCents > 0.85 ? "var(--critical)" : undefined }} /></div>
+            <div className="xs faint" style={{ marginTop: 6 }}>{fmtEur(fisc.perVat)} a testa su {settings.tax.vatNumbers} partite IVA. Stima indicativa: verificatela con il commercialista.</div>
+          </div>
+        </Card>
+
+        <Card title={`Punto di pareggio · ${MONTHS_IT[new Date().getMonth()]}`}>
+          <div className="stat"><div className="label">{be.missing > 0 ? "Mancano per coprire i costi fissi" : "Costi fissi coperti"}</div>
+            <div className="value">{be.missing > 0 ? fmtEur(be.missing) : "✓"}</div>
+            <div className="sub">{be.missing > 0 ? `≈ ${be.sessionsNeeded} sessioni da ${fmtEur(be.avgSession)} (media ultimi 6 mesi)` : `Oltre il pareggio di ${fmtEur(be.income - be.fixed)}`}</div></div>
+          <div className="meter mt"><i style={{ width: `${Math.min(100, be.rate * 100)}%` }} /></div>
+          <div className="row between small" style={{ marginTop: 6 }}><span className="muted">Incassato {fmtEur(be.income)}</span><span className="muted">Costi fissi {fmtEur(be.fixed)}</span></div>
+          <div className="stack xs faint mt">
+            {settings.fixedCosts.map((c) => <div key={c.label} className="row between"><span>{c.label}</span><span className="num">{fmtEur(c.cents)}</span></div>)}
+          </div>
+        </Card>
+
+        <Card title="Fatturato per canale di acquisizione">
+          {channels.length === 0 ? (
+            <div className="small faint">Indica il canale di provenienza degli artisti per vedere da dove arrivano i soldi.</div>
+          ) : (
+            <div className="stack small">
+              {channels.map((c) => (
+                <div key={c.channel}>
+                  <div className="row between"><span>{c.channel} <span className="faint xs">· {c.clients} {c.clients === 1 ? "cliente" : "clienti"}</span></span><span className="num">{fmtEur(c.paid)}</span></div>
+                  <div className="meter" style={{ marginTop: 6 }}><i style={{ width: `${(c.paid / maxChannel) * 100}%`, background: "var(--series-income)" }} /></div>
+                  <div className="xs faint" style={{ marginTop: 3 }}>Valore medio per cliente {fmtEur(c.avg)}{c.leads ? ` · ${c.leads} contatti in CRM` : ""}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </div>
 
       <div className="grid cols-3 mt">
         <Card title="Movimento in contanti">

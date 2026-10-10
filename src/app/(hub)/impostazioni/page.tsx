@@ -10,9 +10,13 @@ import { Card, PageHead } from "@/components/ui";
 import { ActionButton } from "@/components/ActionForm";
 import { SubmitButton } from "@/components/SubmitButton";
 import { ConfirmButton } from "@/components/ConfirmButton";
-import { connectBankAction, disconnectBankAction, runDailyAction } from "../actions";
+import { connectBankAction, disconnectBankAction, runDailyAction, saveSettingsAction } from "../actions";
+import { ActionForm } from "@/components/ActionForm";
+import { fixedCostsTotal, getSettings, WEEKDAYS } from "@/lib/settings";
+import { partners } from "@/lib/partners";
+import { fmtEur } from "@/lib/format";
 
-export const metadata = { title: "Integrazioni" };
+export const metadata = { title: "Impostazioni" };
 
 function Status({ on, label }: { on: boolean; label?: string }) {
   return <span className={`badge ${on ? "good" : "plain"}`}>{label ?? (on ? "Configurato" : "Non configurato")}</span>;
@@ -41,13 +45,14 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const ga = googleConfigured() && Boolean(process.env.GA4_PROPERTY_ID);
   const drive = googleConfigured() && Boolean(process.env.GOOGLE_DRIVE_FOLDER_ID);
   const daily = lastDailyRun();
+  const settings = getSettings();
 
   return (
     <>
       <PageHead
-        eyebrow="Connessioni"
-        title="Integrazioni"
-        intro="Stato delle sorgenti dati collegate all'hub. Le credenziali si impostano nelle variabili d'ambiente del server (vedi README)."
+        eyebrow="Studio & connessioni"
+        title="Impostazioni"
+        intro="Parametri dello studio (sale, orari, costi fissi, fisco, quote dei soci) e stato delle sorgenti dati collegate."
         actions={<ActionButton action={runDailyAction} className="btn btn-chrome">Esegui sincronizzazione completa</ActionButton>}
       />
 
@@ -56,6 +61,55 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       {sp.tiktok === "ok" && <div className="notice good" style={{ marginBottom: 16 }}>Account TikTok collegato: la prima istantanea è salvata.</div>}
       {sp.tiktok === "error" && <div className="notice critical" style={{ marginBottom: 16 }}>Collegamento TikTok non riuscito{sp.msg ? `: ${sp.msg}` : "."}</div>}
       {sp.bank === "error" && <div className="notice critical" style={{ marginBottom: 16 }}>Collegamento non riuscito: {sp.msg}</div>}
+
+      <section id="parametri" className="card" style={{ marginBottom: 16, scrollMarginTop: 90 }}>
+        <div className="card-head"><h3>Parametri dello studio</h3><span className="xs faint">Valori di esempio: adattateli ai vostri</span></div>
+        <ActionForm action={saveSettingsAction} resetOnSuccess={false} className="stack">
+          <div className="grid cols-3">
+            <div className="stack">
+              <div className="eyebrow">Sale e orari</div>
+              <label className="field"><span>Sale (separate da virgola)</span><input className="input" name="rooms" defaultValue={settings.rooms.join(", ")} /></label>
+              <div className="form-grid">
+                <label className="field"><span>Apertura (ora)</span><input className="input num" type="number" min={0} max={23} name="openHour" defaultValue={settings.openHour} /></label>
+                <label className="field"><span>Chiusura (ora)</span><input className="input num" type="number" min={1} max={24} name="closeHour" defaultValue={settings.closeHour} /></label>
+              </div>
+              <div className="field"><span>Giorni di apertura</span>
+                <div className="segmented">
+                  {WEEKDAYS.map((d, i) => (
+                    <label key={d}><input type="checkbox" name={`day:${i + 1}`} defaultChecked={settings.openDays.includes(i + 1)} /><span>{d}</span></label>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="stack">
+              <div className="eyebrow">Costi fissi mensili · {fmtEur(fixedCostsTotal(settings))}</div>
+              <label className="field"><span>Una voce per riga: «Voce: importo»</span>
+                <textarea className="input mono" name="fixedCosts" rows={7} defaultValue={settings.fixedCosts.map((c) => `${c.label}: ${(c.cents / 100).toLocaleString("it-IT")}`).join("\n")} />
+              </label>
+            </div>
+            <div className="stack">
+              <div className="eyebrow">Fisco · regime forfettario</div>
+              <div className="form-grid">
+                <label className="field"><span>Coefficiente redditività %</span><input className="input num" name="coefficient" inputMode="decimal" defaultValue={String(settings.tax.coefficient * 100).replace(".", ",")} /></label>
+                <label className="field"><span>Imposta sostitutiva %</span><input className="input num" name="substituteRate" inputMode="decimal" defaultValue={String(settings.tax.substituteRate * 100).replace(".", ",")} /></label>
+                <label className="field"><span>Contributi INPS %</span><input className="input num" name="inpsRate" inputMode="decimal" defaultValue={String(Math.round(settings.tax.inpsRate * 10000) / 100).replace(".", ",")} /></label>
+                <label className="field"><span>Soglia ricavi (€)</span><input className="input num" name="threshold" inputMode="numeric" defaultValue={settings.tax.threshold} /></label>
+                <label className="field"><span>Partite IVA</span><input className="input num" type="number" min={1} max={10} name="vatNumbers" defaultValue={settings.tax.vatNumbers} /></label>
+              </div>
+              <div className="eyebrow" style={{ marginTop: 6 }}>Quote soci %</div>
+              <div className="form-grid">
+                {partners().map((p) => (
+                  <label key={p} className="field"><span>{p}</span><input className="input num" name={`share:${p}`} inputMode="decimal" defaultValue={String(settings.shares[p] ?? 0).replace(".", ",")} /></label>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="row between" style={{ flexWrap: "wrap", gap: 12 }}>
+            <span className="xs faint">Coefficiente 67% e INPS 26,07% sono valori tipici ma dipendono dal codice ATECO e dalla gestione previdenziale: verificateli con il commercialista. Imposta al 5% per i primi 5 anni di attività.</span>
+            <SubmitButton pendingLabel="Salvo…">Salva parametri</SubmitButton>
+          </div>
+        </ActionForm>
+      </section>
 
       <div className="grid cols-2">
         <Card title="Conto bancario aziendale" actions={<Status on={Boolean(bank.link)} label={bank.link ? "Collegato" : bankConfigured() ? "Da collegare" : "Non configurato"} />}>

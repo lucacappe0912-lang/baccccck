@@ -4,12 +4,16 @@ import { usePathname } from "next/navigation";
 
 const LINKS = [
   { href: "/", label: "Panoramica" },
+  { href: "/agenda", label: "Agenda" },
   { href: "/finanza", label: "Finanza" },
+  { href: "/incassi", label: "Incassi" },
   { href: "/crm", label: "CRM" },
   { href: "/artisti", label: "Artisti" },
   { href: "/analytics", label: "Analytics" },
-  { href: "/insights", label: "Consigli & Insights" },
-  { href: "/impostazioni", label: "Integrazioni" },
+  { href: "/soci", label: "Soci" },
+  { href: "/attrezzatura", label: "Attrezzatura" },
+  { href: "/insights", label: "Insights" },
+  { href: "/impostazioni", label: "Impostazioni" },
 ];
 
 export function Nav() {

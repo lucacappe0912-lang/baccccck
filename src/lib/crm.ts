@@ -1,5 +1,6 @@
 import "server-only";
 import { db, tx } from "./db";
+import { addDays, today } from "./format";
 
 export const LEAD_STATUSES = ["nuovo", "contattato", "in trattativa", "convertito", "perso"] as const;
 export const SERVICES = ["Registrazione", "Mix", "Master", "Produzione", "Sessione vocale", "Beat", "Editing"] as const;
@@ -22,6 +23,11 @@ export type Lead = {
   notes: string;
   source: string;
   status: string;
+  channel: string;
+  referred_by: string;
+  next_action: string;
+  next_action_date: string | null;
+  last_contact: string | null;
   created_at: string;
 };
 
@@ -32,6 +38,7 @@ export type Package = {
   name: string;
   price_cents: number;
   purchased_at: string;
+  due_date: string | null;
   archived: number;
   items: PackageItem[];
 };
@@ -43,6 +50,8 @@ export type Artist = {
   phone: string;
   instagram: string;
   notes: string;
+  channel: string;
+  referred_by: string;
   created_at: string;
   packages: Package[];
   total: number;
@@ -62,13 +71,16 @@ export function listLeads(): Lead[] {
     .all() as Lead[];
 }
 
-export type LeadInput = Pick<Lead, "name" | "email" | "phone" | "instagram" | "genre" | "notes">;
+export type LeadInput = Pick<Lead, "name" | "email" | "phone" | "instagram" | "genre" | "notes"> & {
+  channel?: string;
+  referredBy?: string;
+};
 
 export function addLead(input: LeadInput & { source?: string; externalRef?: string }) {
   return db()
     .prepare(
-      `INSERT INTO leads(name, email, phone, instagram, genre, notes, source, external_ref)
-       VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO leads(name, email, phone, instagram, genre, notes, source, external_ref, channel, referred_by)
+       VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(external_ref) DO UPDATE SET
          name = excluded.name, email = excluded.email, phone = excluded.phone,
          instagram = excluded.instagram, genre = excluded.genre`,
@@ -82,7 +94,45 @@ export function addLead(input: LeadInput & { source?: string; externalRef?: stri
       input.notes,
       input.source ?? "manuale",
       input.externalRef ?? null,
+      input.channel ?? (input.source === "sito" ? "Sito web" : ""),
+      input.referredBy ?? "",
     );
+}
+
+/** "Contattato oggi": records the touchpoint, closes a due next action and moves a new lead forward. */
+export function markContacted(id: number) {
+  const t = today();
+  db()
+    .prepare(
+      `UPDATE leads SET last_contact = ?,
+         status = CASE WHEN status = 'nuovo' THEN 'contattato' ELSE status END,
+         next_action = CASE WHEN next_action_date IS NOT NULL AND next_action_date <= ? THEN '' ELSE next_action END,
+         next_action_date = CASE WHEN next_action_date IS NOT NULL AND next_action_date <= ? THEN NULL ELSE next_action_date END
+       WHERE id = ?`,
+    )
+    .run(t, t, t, id);
+}
+
+export function setFollowUp(id: number, action: string, date: string | null) {
+  db().prepare("UPDATE leads SET next_action = ?, next_action_date = ? WHERE id = ?").run(action, date, id);
+}
+
+export const STALE_DAYS = 7;
+
+/** Leads needing attention: next action due, or no contact for more than STALE_DAYS. */
+export function followUps(leads: Lead[] = listLeads()) {
+  const t = today();
+  const staleBefore = addDays(t, -STALE_DAYS);
+  return leads
+    .filter((l) => l.status !== "convertito" && l.status !== "perso")
+    .map((l) => {
+      const lastTouch = l.last_contact ?? l.created_at.slice(0, 10);
+      const due = l.next_action_date !== null && l.next_action_date <= t;
+      const stale = lastTouch < staleBefore;
+      return { lead: l, due, stale, daysSince: Math.round((Date.parse(t) - Date.parse(lastTouch)) / 86_400_000) };
+    })
+    .filter((x) => x.due || x.stale)
+    .sort((a, b) => Number(b.due) - Number(a.due) || b.daysSince - a.daysSince);
 }
 
 export function setLeadStatus(id: number, status: string) {
@@ -99,8 +149,8 @@ export function convertLead(id: number): number {
     const lead = db().prepare("SELECT * FROM leads WHERE id = ?").get(id) as Lead | undefined;
     if (!lead) throw new Error("Lead non trovato");
     const res = db()
-      .prepare("INSERT INTO artists(name, email, phone, instagram, notes, lead_id) VALUES(?, ?, ?, ?, ?, ?)")
-      .run(lead.name, lead.email, lead.phone, lead.instagram, lead.notes, lead.id);
+      .prepare("INSERT INTO artists(name, email, phone, instagram, notes, lead_id, channel, referred_by) VALUES(?, ?, ?, ?, ?, ?, ?, ?)")
+      .run(lead.name, lead.email, lead.phone, lead.instagram, lead.notes, lead.id, lead.channel, lead.referred_by);
     db().prepare("UPDATE leads SET status = 'convertito' WHERE id = ?").run(id);
     return Number(res.lastInsertRowid);
   });
@@ -145,10 +195,18 @@ export function listArtists(): Artist[] {
     .sort((x, y) => order[x.upsell] - order[y.upsell] || x.name.localeCompare(y.name));
 }
 
-export function addArtist(input: { name: string; email: string; phone: string; instagram: string; notes: string }) {
+export function addArtist(input: {
+  name: string;
+  email: string;
+  phone: string;
+  instagram: string;
+  notes: string;
+  channel: string;
+  referredBy: string;
+}) {
   const res = db()
-    .prepare("INSERT INTO artists(name, email, phone, instagram, notes) VALUES(?, ?, ?, ?, ?)")
-    .run(input.name, input.email, input.phone, input.instagram, input.notes);
+    .prepare("INSERT INTO artists(name, email, phone, instagram, notes, channel, referred_by) VALUES(?, ?, ?, ?, ?, ?, ?)")
+    .run(input.name, input.email, input.phone, input.instagram, input.notes, input.channel, input.referredBy);
   return Number(res.lastInsertRowid);
 }
 
@@ -156,17 +214,25 @@ export function deleteArtist(id: number) {
   db().prepare("DELETE FROM artists WHERE id = ?").run(id);
 }
 
-export function addPackage(input: { artistId: number; name: string; priceCents: number; purchasedAt: string; items: [string, number][] }) {
-  tx(() => {
+export function addPackage(input: {
+  artistId: number;
+  name: string;
+  priceCents: number;
+  purchasedAt: string;
+  dueDate: string | null;
+  items: [string, number][];
+}): number {
+  return tx(() => {
     const res = db()
-      .prepare("INSERT INTO packages(artist_id, name, price_cents, purchased_at) VALUES(?, ?, ?, ?)")
-      .run(input.artistId, input.name, input.priceCents, input.purchasedAt);
+      .prepare("INSERT INTO packages(artist_id, name, price_cents, purchased_at, due_date) VALUES(?, ?, ?, ?, ?)")
+      .run(input.artistId, input.name, input.priceCents, input.purchasedAt, input.dueDate);
     const pkgId = Number(res.lastInsertRowid);
     const ins = db().prepare("INSERT INTO package_items(package_id, service, position) VALUES(?, ?, ?)");
     let pos = 0;
     for (const [service, qty] of input.items) {
       for (let i = 0; i < qty; i++) ins.run(pkgId, qty > 1 ? `${service} ${i + 1}/${qty}` : service, pos++);
     }
+    return pkgId;
   });
 }
 

@@ -1,13 +1,24 @@
 import { requireSession } from "@/lib/auth";
-import { LEAD_STATUSES, listLeads } from "@/lib/crm";
+import { followUps, LEAD_STATUSES, listLeads, STALE_DAYS } from "@/lib/crm";
+import { CHANNELS } from "@/lib/business";
+import { partners } from "@/lib/partners";
 import { lastSync } from "@/lib/db";
 import { googleConfigured } from "@/lib/integrations/google";
-import { fmtDate } from "@/lib/format";
+import { fmtDate, today } from "@/lib/format";
 import { Card, Empty, PageHead, Stat } from "@/components/ui";
 import { ActionButton, ActionForm } from "@/components/ActionForm";
 import { SubmitButton } from "@/components/SubmitButton";
 import { ConfirmButton } from "@/components/ConfirmButton";
-import { addLeadAction, convertLeadAction, deleteLeadAction, setLeadStatusAction, syncDriveAction } from "../actions";
+import {
+  addLeadAction,
+  contactedAction,
+  convertLeadAction,
+  deleteLeadAction,
+  followUpAction,
+  leadChannelAction,
+  setLeadStatusAction,
+  syncDriveAction,
+} from "../actions";
 
 export const metadata = { title: "CRM" };
 
@@ -28,6 +39,8 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
   const driveSync = lastSync("drive");
   const driveReady = googleConfigured() && Boolean(process.env.GOOGLE_DRIVE_FOLDER_ID);
   const count = (s: string) => all.filter((l) => l.status === s).length;
+  const todo = followUps(all);
+  const t = today();
 
   return (
     <>
@@ -40,7 +53,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
 
       <div className="grid cols-4">
         <Stat label="Nuovi" value={count("nuovo")} sub="da contattare" />
-        <Stat label="In trattativa" value={count("in trattativa")} />
+        <Stat label="Da ricontattare" value={<span className={todo.length ? "delta-down" : ""}>{todo.length}</span>} sub={`azioni scadute o fermi da più di ${STALE_DAYS} giorni`} />
         <Stat label="Convertiti" value={count("convertito")} sub={all.length ? `${Math.round((count("convertito") / all.length) * 100)}% del totale` : undefined} />
         <Stat
           label="Google Drive"
@@ -48,6 +61,27 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
           sub={driveSync ? `${fmtDate(driveSync.at)} · ${driveSync.message}` : driveReady ? "Prima sincronizzazione al prossimo ciclo" : "Configura il service account in Integrazioni"}
         />
       </div>
+
+      {todo.length > 0 && (
+        <Card className="mt" title="Da ricontattare oggi">
+          <div className="stack">
+            {todo.slice(0, 6).map(({ lead, due, stale, daysSince }) => (
+              <div key={lead.id} className={`upsell-banner ${due ? "" : "soon"}`}>
+                <span aria-hidden>{due ? "●" : "◐"}</span>
+                <span className="grow">
+                  <strong style={{ fontWeight: 600 }}>{lead.name}</strong>
+                  {due && lead.next_action ? ` · ${lead.next_action}` : ""}
+                  <span className="xs muted"> · {due ? `previsto ${fmtDate(lead.next_action_date!)}` : ""}{due && stale ? " · " : ""}{stale ? `nessun contatto da ${daysSince} giorni` : ""}</span>
+                </span>
+                <form action={contactedAction}>
+                  <input type="hidden" name="id" value={lead.id} />
+                  <SubmitButton className="btn btn-sm btn-chrome">✓ Contattato oggi</SubmitButton>
+                </form>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <div className="grid cols-3 mt">
         <Card
@@ -70,7 +104,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
           ) : (
             <div className="table-wrap" style={{ marginTop: 8 }}>
               <table className="table">
-                <thead><tr><th>Contatto</th><th>Recapiti</th><th>Fonte</th><th>Stato</th><th></th></tr></thead>
+                <thead><tr><th>Contatto</th><th>Recapiti</th><th>Provenienza</th><th>Follow-up</th><th>Stato</th><th></th></tr></thead>
                 <tbody>
                   {leads.map((l) => (
                     <tr key={l.id}>
@@ -90,7 +124,53 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
                           </div>
                         )}
                       </td>
-                      <td className="small muted">{SOURCE_LABEL[l.source] ?? l.source}</td>
+                      <td className="small">
+                        <details className="disclosure">
+                          <summary>
+                            <div>{l.channel || <span className="faint">Canale?</span>}</div>
+                            <div className="xs faint">{SOURCE_LABEL[l.source] ?? l.source}{l.referred_by ? ` · portato da ${l.referred_by}` : ""}</div>
+                          </summary>
+                          <form action={leadChannelAction} className="stack" style={{ gap: 6, marginTop: 6, minWidth: 150 }}>
+                            <input type="hidden" name="id" value={l.id} />
+                            <select className="input" name="channel" defaultValue={l.channel} aria-label="Canale" style={{ height: 30, fontSize: 12.5 }}>
+                              <option value="">Canale…</option>
+                              {CHANNELS.map((c) => <option key={c}>{c}</option>)}
+                            </select>
+                            <select className="input" name="referredBy" defaultValue={l.referred_by} aria-label="Portato da" style={{ height: 30, fontSize: 12.5 }}>
+                              <option value="">Portato da…</option>
+                              {partners().map((p) => <option key={p}>{p}</option>)}
+                            </select>
+                            <SubmitButton className="btn btn-sm">Salva</SubmitButton>
+                          </form>
+                        </details>
+                      </td>
+                      <td className="small" style={{ minWidth: 170 }}>
+                        <details className="disclosure">
+                          <summary>
+                            {l.next_action ? (
+                              <div>
+                                <div>{l.next_action}</div>
+                                {l.next_action_date && <div className={`xs ${l.next_action_date <= t ? "delta-down" : "faint"}`}>{fmtDate(l.next_action_date)}</div>}
+                              </div>
+                            ) : (
+                              <span className="faint">+ Prossima azione</span>
+                            )}
+                            <div className="xs faint">{l.last_contact ? `Sentito il ${fmtDate(l.last_contact)}` : "Mai contattato"}</div>
+                          </summary>
+                          <form action={followUpAction} className="stack" style={{ gap: 6, marginTop: 6 }}>
+                            <input type="hidden" name="id" value={l.id} />
+                            <input className="input" name="nextAction" defaultValue={l.next_action} placeholder="Es. mandare listino" style={{ height: 30, fontSize: 12.5 }} aria-label="Prossima azione" />
+                            <input className="input" type="date" name="nextActionDate" defaultValue={l.next_action_date ?? ""} style={{ height: 30, fontSize: 12.5 }} aria-label="Data" />
+                            <SubmitButton className="btn btn-sm">Salva</SubmitButton>
+                          </form>
+                        </details>
+                        {l.status !== "convertito" && l.status !== "perso" && (
+                          <form action={contactedAction} style={{ marginTop: 4 }}>
+                            <input type="hidden" name="id" value={l.id} />
+                            <SubmitButton className="btn btn-ghost btn-sm" style={{ paddingLeft: 0 }}>✓ Contattato oggi</SubmitButton>
+                          </form>
+                        )}
+                      </td>
                       <td>
                         <form action={setLeadStatusAction} className="row" style={{ gap: 6 }}>
                           <input type="hidden" name="id" value={l.id} />
@@ -130,6 +210,14 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
               <label className="field"><span>Instagram</span><input className="input" name="instagram" placeholder="@artista" /></label>
             </div>
             <label className="field"><span>Genere</span><input className="input" name="genre" placeholder="Rap, R&B, Pop…" /></label>
+            <div className="form-grid">
+              <label className="field"><span>Come ci ha trovati</span>
+                <select className="input" name="channel" defaultValue=""><option value="">—</option>{CHANNELS.map((c) => <option key={c}>{c}</option>)}</select>
+              </label>
+              <label className="field"><span>Portato da</span>
+                <select className="input" name="referredBy" defaultValue=""><option value="">—</option>{partners().map((p) => <option key={p}>{p}</option>)}</select>
+              </label>
+            </div>
             <label className="field"><span>Note</span><textarea className="input" name="notes" placeholder="Cosa cerca, budget, tempistiche…" /></label>
             <SubmitButton pendingLabel="Salvo…">Aggiungi alla pipeline</SubmitButton>
           </ActionForm>

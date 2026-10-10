@@ -9,6 +9,16 @@ import * as insights from "@/lib/insights";
 import { METRIC_DEFS, setMetric, type Source } from "@/lib/metrics";
 import { createBankLink, disconnectBank } from "@/lib/integrations/gocardless";
 import { runDaily, syncBank, syncDrive } from "@/lib/sync";
+import * as biz from "@/lib/business";
+import { CHANNELS } from "@/lib/business";
+import { partners } from "@/lib/partners";
+import { getSettings, saveSettings, type StudioSettings } from "@/lib/settings";
+
+const PAYMENT_METHODS = ["bonifico", "contanti", "pos"] as const;
+const oneOf = <T extends string>(v: string, list: readonly T[], fallback: T | ""): T | "" =>
+  (list as readonly string[]).includes(v) ? (v as T) : fallback;
+const optDate = (v: string) => (/^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
+const time = (v: string) => (/^([01]\d|2[0-3]):[0-5]\d$/.test(v) ? v : null);
 
 const str = (f: FormData, k: string, max = 2000) => String(f.get(k) ?? "").trim().slice(0, max);
 const int = (f: FormData, k: string) => {
@@ -87,6 +97,8 @@ export async function addLeadAction(_: FormState, f: FormData): Promise<FormStat
     instagram: str(f, "instagram", 100),
     genre: str(f, "genre", 100),
     notes: str(f, "notes"),
+    channel: oneOf(str(f, "channel"), CHANNELS, ""),
+    referredBy: oneOf(str(f, "referredBy"), partners(), ""),
   });
   revalidatePath("/crm");
   return { ok: `${name} aggiunto alla pipeline.` };
@@ -133,6 +145,8 @@ export async function addArtistAction(_: FormState, f: FormData): Promise<FormSt
     phone: str(f, "phone", 50),
     instagram: str(f, "instagram", 100),
     notes: str(f, "notes"),
+    channel: oneOf(str(f, "channel"), CHANNELS, ""),
+    referredBy: oneOf(str(f, "referredBy"), partners(), ""),
   });
   revalidatePath("/artisti");
   return { ok: `${name} aggiunto.` };
@@ -157,13 +171,25 @@ export async function addPackageAction(_: FormState, f: FormData): Promise<FormS
   if (custom && customQty > 0) items.push([custom, customQty]);
   if (items.length === 0) return { error: "Aggiungi almeno un servizio al pacchetto." };
   const name = str(f, "name", 120) || "Pacchetto personalizzato";
-  crm.addPackage({
+  const due = str(f, "dueDate");
+  const packageId = crm.addPackage({
     artistId,
     name,
     priceCents: Math.max(0, parseEuroToCents(str(f, "price", 30)) ?? 0),
     purchasedAt: isoDateOr(str(f, "purchasedAt"), today()),
+    dueDate: /^\d{4}-\d{2}-\d{2}$/.test(due) ? due : null,
     items,
   });
+  const deposit = parseEuroToCents(str(f, "deposit", 30));
+  if (deposit && deposit > 0) {
+    biz.addPayment({
+      packageId,
+      date: isoDateOr(str(f, "purchasedAt"), today()),
+      cents: deposit,
+      method: oneOf(str(f, "depositMethod"), PAYMENT_METHODS, "bonifico") || "bonifico",
+      author: (await requireSession()).partner,
+    });
+  }
   revalidatePath("/artisti");
   revalidatePath("/");
   return { ok: `Pacchetto “${name}” assegnato.` };
@@ -279,4 +305,222 @@ export async function disconnectBankAction() {
   await requireSession();
   disconnectBank();
   revalidatePath("/impostazioni");
+}
+
+// ─── CRM follow-up ──────────────────────────────────────────────────────────
+
+export async function contactedAction(f: FormData) {
+  await requireSession();
+  crm.markContacted(int(f, "id"));
+  revalidatePath("/crm");
+  revalidatePath("/");
+}
+
+export async function followUpAction(f: FormData) {
+  await requireSession();
+  crm.setFollowUp(int(f, "id"), str(f, "nextAction", 200), optDate(str(f, "nextActionDate")));
+  revalidatePath("/crm");
+  revalidatePath("/");
+}
+
+export async function leadChannelAction(f: FormData) {
+  await requireSession();
+  const { db } = await import("@/lib/db");
+  db()
+    .prepare("UPDATE leads SET channel = ?, referred_by = ? WHERE id = ?")
+    .run(oneOf(str(f, "channel"), CHANNELS, ""), oneOf(str(f, "referredBy"), partners(), ""), int(f, "id"));
+  revalidatePath("/crm");
+}
+
+// ─── Agenda ─────────────────────────────────────────────────────────────────
+
+export async function addSessionAction(_: FormState, f: FormData): Promise<FormState> {
+  await requireSession();
+  const start = time(str(f, "start")), end = time(str(f, "end"));
+  const date = optDate(str(f, "date"));
+  if (!date || !start || !end) return { error: "Indica data, ora di inizio e di fine." };
+  const settings = getSettings();
+  const itemId = Number(str(f, "itemId")) || null;
+  const artistId = Number(str(f, "artistId")) || null;
+  const err = biz.addSession({
+    date,
+    start,
+    end,
+    room: oneOf(str(f, "room"), settings.rooms, settings.rooms[0]) || settings.rooms[0],
+    engineer: oneOf(str(f, "engineer"), partners(), ""),
+    artistId,
+    itemId,
+    title: str(f, "title", 120),
+  });
+  if (err) return { error: err };
+  revalidatePath("/agenda");
+  revalidatePath("/");
+  return { ok: "Sessione prenotata." };
+}
+
+export async function sessionStatusAction(f: FormData) {
+  const { partner } = await requireSession();
+  const status = oneOf(str(f, "status"), ["prenotata", "completata", "annullata"] as const, "prenotata") || "prenotata";
+  biz.setSessionStatus(int(f, "id"), status, partner);
+  revalidatePath("/agenda");
+  revalidatePath("/artisti");
+  revalidatePath("/");
+}
+
+export async function deleteSessionAction(f: FormData) {
+  await requireSession();
+  biz.deleteSession(int(f, "id"));
+  revalidatePath("/agenda");
+}
+
+// ─── Incassi ────────────────────────────────────────────────────────────────
+
+export async function addPaymentAction(_: FormState, f: FormData): Promise<FormState> {
+  const { partner } = await requireSession();
+  const cents = parseEuroToCents(str(f, "amount", 30));
+  if (!cents || cents <= 0) return { error: "Inserisci un importo valido." };
+  const method = oneOf(str(f, "method"), PAYMENT_METHODS, "bonifico") || "bonifico";
+  biz.addPayment({ packageId: int(f, "packageId"), date: isoDateOr(str(f, "date"), today()), cents, method, author: partner });
+  revalidatePath("/artisti");
+  revalidatePath("/incassi");
+  revalidatePath("/finanza");
+  revalidatePath("/");
+  return { ok: method === "contanti" ? "Pagamento registrato e aggiunto ai movimenti in contanti." : "Pagamento registrato." };
+}
+
+export async function deletePaymentAction(f: FormData) {
+  await requireSession();
+  biz.deletePayment(int(f, "id"));
+  revalidatePath("/artisti");
+  revalidatePath("/incassi");
+  revalidatePath("/finanza");
+}
+
+export async function packageDueAction(f: FormData) {
+  await requireSession();
+  biz.setPackageDueDate(int(f, "id"), optDate(str(f, "dueDate")));
+  revalidatePath("/artisti");
+  revalidatePath("/incassi");
+}
+
+// ─── Soci ───────────────────────────────────────────────────────────────────
+
+export async function addPartnerMoveAction(_: FormState, f: FormData): Promise<FormState> {
+  await requireSession();
+  const cents = parseEuroToCents(str(f, "amount", 30));
+  if (!cents || cents <= 0) return { error: "Inserisci un importo valido." };
+  const partner = oneOf(str(f, "partner"), partners(), "");
+  if (!partner) return { error: "Seleziona il socio." };
+  biz.addPartnerMove({
+    date: isoDateOr(str(f, "date"), today()),
+    partner,
+    kind: str(f, "kind") === "versamento" ? "versamento" : "prelievo",
+    amount_cents: cents,
+    note: str(f, "note", 200),
+  });
+  revalidatePath("/soci");
+  return { ok: "Movimento registrato." };
+}
+
+export async function deletePartnerMoveAction(f: FormData) {
+  await requireSession();
+  biz.deletePartnerMove(int(f, "id"));
+  revalidatePath("/soci");
+}
+
+// ─── Brani ──────────────────────────────────────────────────────────────────
+
+export async function addTrackAction(_: FormState, f: FormData): Promise<FormState> {
+  await requireSession();
+  const title = str(f, "title", 150);
+  if (!title) return { error: "Serve il titolo del brano." };
+  const url = str(f, "driveUrl", 500);
+  biz.addTrack({ artistId: int(f, "artistId"), title, dueDate: optDate(str(f, "dueDate")), driveUrl: /^https?:\/\//.test(url) ? url : "" });
+  revalidatePath("/artisti");
+  revalidatePath("/");
+  return { ok: `“${title}” aggiunto.` };
+}
+
+export async function moveTrackAction(f: FormData) {
+  await requireSession();
+  const op = str(f, "op");
+  if (op === "revision") biz.addRevision(int(f, "id"));
+  else if (op === "delete") biz.deleteTrack(int(f, "id"));
+  else biz.moveTrack(int(f, "id"), op === "back" ? -1 : 1);
+  revalidatePath("/artisti");
+  revalidatePath("/");
+}
+
+// ─── Attrezzatura ───────────────────────────────────────────────────────────
+
+export async function addEquipmentAction(_: FormState, f: FormData): Promise<FormState> {
+  await requireSession();
+  const name = str(f, "name", 150);
+  if (!name) return { error: "Serve il nome dell'attrezzatura." };
+  const months = Number(str(f, "serviceMonths"));
+  biz.addEquipment({
+    name,
+    category: oneOf(str(f, "category"), biz.EQUIPMENT_CATEGORIES, "Altro") || "Altro",
+    purchase_date: isoDateOr(str(f, "purchaseDate"), today()),
+    cost_cents: Math.max(0, parseEuroToCents(str(f, "cost", 30)) ?? 0),
+    life_years: Math.min(20, Math.max(1, Number(str(f, "lifeYears")) || 5)),
+    warranty_until: optDate(str(f, "warrantyUntil")),
+    service_months: Number.isInteger(months) && months > 0 ? Math.min(60, months) : null,
+    notes: str(f, "notes", 500),
+  });
+  revalidatePath("/attrezzatura");
+  return { ok: `${name} aggiunto all'inventario.` };
+}
+
+export async function equipmentOpAction(f: FormData) {
+  await requireSession();
+  if (str(f, "op") === "delete") biz.deleteEquipment(int(f, "id"));
+  else biz.markServiced(int(f, "id"));
+  revalidatePath("/attrezzatura");
+  revalidatePath("/");
+}
+
+// ─── Parametri dello studio ─────────────────────────────────────────────────
+
+export async function saveSettingsAction(_: FormState, f: FormData): Promise<FormState> {
+  await requireSession();
+  const cur = getSettings();
+  const num = (k: string) => Number(str(f, k, 20).replace(",", "."));
+  const pct = (k: string, fallback: number) => {
+    const v = num(k);
+    return Number.isFinite(v) && v >= 0 && v <= 100 ? v / 100 : fallback;
+  };
+  const rooms = str(f, "rooms", 300).split(",").map((r) => r.trim()).filter(Boolean).slice(0, 10);
+  const open = Math.round(num("openHour")), close = Math.round(num("closeHour"));
+  if (!(open >= 0 && close <= 24 && close > open)) return { error: "Orari non validi: la chiusura deve essere dopo l'apertura." };
+  const fixedCosts = str(f, "fixedCosts", 3000)
+    .split(/\r?\n/)
+    .map((line) => line.split(/[:=]/))
+    .filter((parts) => parts.length >= 2 && parts[0].trim())
+    .map(([label, ...rest]) => ({ label: label.trim().slice(0, 60), cents: Math.max(0, parseEuroToCents(rest.join(":")) ?? 0) }));
+  const shares: Record<string, number> = {};
+  for (const p of partners()) {
+    const v = num(`share:${p}`);
+    shares[p] = Number.isFinite(v) && v >= 0 ? v : cur.shares[p] ?? 0;
+  }
+  const total = Object.values(shares).reduce((a, b) => a + b, 0);
+  if (Math.abs(total - 100) > 0.5) return { error: `Le quote dei soci devono sommare 100% (ora ${total.toFixed(1)}%).` };
+  const next: StudioSettings = {
+    rooms: rooms.length ? rooms : cur.rooms,
+    openHour: open,
+    closeHour: close,
+    openDays: [1, 2, 3, 4, 5, 6, 7].filter((d) => f.get(`day:${d}`) === "on"),
+    fixedCosts,
+    tax: {
+      coefficient: pct("coefficient", cur.tax.coefficient),
+      substituteRate: pct("substituteRate", cur.tax.substituteRate),
+      inpsRate: pct("inpsRate", cur.tax.inpsRate),
+      threshold: Math.max(0, num("threshold") || cur.tax.threshold),
+      vatNumbers: Math.min(10, Math.max(1, Math.round(num("vatNumbers")) || cur.tax.vatNumbers)),
+    },
+    shares,
+  };
+  saveSettings(next);
+  revalidatePath("/", "layout");
+  return { ok: "Parametri salvati." };
 }

@@ -2,7 +2,7 @@ import "server-only";
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
-import { SCHEMA } from "./schema";
+import { COLUMN_MIGRATIONS, SCHEMA } from "./schema";
 
 
 const globalForDb = globalThis as unknown as { __hubDb?: DatabaseSync };
@@ -13,6 +13,7 @@ export function db(): DatabaseSync {
     mkdirSync(dir, { recursive: true });
     const conn = new DatabaseSync(path.join(dir, "hub.db"));
     conn.exec(SCHEMA);
+    migrateColumns(conn);
     globalForDb.__hubDb = conn;
   }
   return globalForDb.__hubDb;
@@ -52,4 +53,11 @@ export function lastSync(job: string): SyncLogRow | null {
     (db().prepare("SELECT * FROM sync_log WHERE job = ? ORDER BY id DESC LIMIT 1").get(job) as SyncLogRow | undefined) ??
     null
   );
+}
+
+function migrateColumns(conn: DatabaseSync) {
+  for (const [table, column, definition] of COLUMN_MIGRATIONS) {
+    const cols = conn.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+    if (!cols.some((c) => c.name === column)) conn.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
 }
