@@ -131,7 +131,6 @@ h1, h2, h3, h4 { font-family: var(--font-display); margin: 0; font-weight: 600; 
   .shell { padding: 0 16px 64px; }
   .cols-2, .cols-3 { grid-template-columns: minmax(0, 1fr); }
   .cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .stat .value { font-size: 19px; overflow-wrap: anywhere; }
   .card { padding: 16px; }
   .span-2 { grid-column: auto; }
   .page-head { padding: 28px 0 20px; }
@@ -368,4 +367,9 @@ details.disclosure[open] > summary .chev { transform: rotate(90deg); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* Phone: big figures shrink to fit two-up stat cards (kept last so it wins over .stat .value). */
+@media (max-width: 760px) {
+  .stat .value { font-size: clamp(15px, 4.4vw, 22px); white-space: nowrap; }
 }

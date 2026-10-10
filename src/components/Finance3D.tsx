@@ -1,7 +1,7 @@
 "use client";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Html, Lightformer, OrbitControls, RoundedBox } from "@react-three/drei";
-import { createContext, useContext, useMemo, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 export type MonthDatum = { month: number; income: number; expenses: number; profit: number; margin: number | null };
@@ -208,6 +208,20 @@ function CashRibbon({ data, hover, setHover }: { data: MonthDatum[]; hover: numb
   );
 }
 
+/** Pulls the camera back on narrow screens so all twelve months stay in frame. */
+function FitCamera({ months }: { months: number }) {
+  const { camera, size } = useThree();
+  useEffect(() => {
+    const cam = camera as THREE.PerspectiveCamera;
+    const aspect = size.width / size.height;
+    const hfov = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * aspect);
+    const dist = Math.max(12, ((months - 1) * SPACING + 2.4) / 2 / Math.tan(hfov / 2));
+    cam.position.set(0, 3.4 * (dist / 12), dist);
+    cam.updateProjectionMatrix();
+  }, [camera, size.width, size.height, months]);
+  return null;
+}
+
 function Studio() {
   // Procedural studio lighting (no external HDR download) → liquid-chrome reflections.
   return (
@@ -272,6 +286,7 @@ export default function Finance3D({ data }: { data: MonthDatum[] }) {
           <ambientLight intensity={0.25} />
           <directionalLight position={[6, 10, 6]} intensity={1.1} />
           <Studio />
+          <FitCamera months={data.length} />
           <group position={[0, mode === "pl" ? -1.5 : -1.2, 0]}>
             <Floor width={width} />
             {mode === "pl" ? (
