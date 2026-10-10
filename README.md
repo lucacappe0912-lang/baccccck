@@ -17,7 +17,7 @@ Stack: Next.js 15 (App Router, server actions) · React 19 · SQLite integrato i
 
 ## Windows
 
-Guida passo-passo a costo zero (PC dello studio + Tailscale): **[GUIDA-WINDOWS.md](GUIDA-WINDOWS.md)**.
+Guida passo-passo a costo zero (PC dello studio + Tailscale): **[GUIDA-WINDOWS.md](GUIDA-WINDOWS.md)**. Prima dell'installazione: **[PREPARAZIONE.md](PREPARAZIONE.md)** (account e chiavi da raccogliere).
 
 ## Avvio rapido
 
@@ -54,13 +54,13 @@ Ogni sezione ha anche un pulsante per sincronizzare subito.
 
 ## Collegare le sorgenti
 
-**Banca (PSD2).** Crea le credenziali su GoCardless Bank Account Data, imposta `GOCARDLESS_SECRET_ID/KEY`, poi in *Integrazioni* scegli la banca e dai il consenso: il redirect torna su `/api/bank/callback`. Il consenso dura 180 giorni; le banche limitano le letture a poche al giorno, quindi i movimenti si aggiornano a ogni sync (non al secondo). Se il provider non è disponibile per il vostro account, usate l'import CSV in *Finanza*: le righe già importate vengono saltate. Il client è isolato in `src/lib/integrations/gocardless.ts` per poterlo sostituire con un altro aggregatore (es. Enable Banking, Salt Edge).
+**Banca (PSD2).** Da luglio 2025 GoCardless Bank Account Data non accetta nuove iscrizioni: per un nuovo account usate l'import CSV (gratuito) oppure un aggregatore a pagamento. Se avete già credenziali GoCardless, impostate `GOCARDLESS_SECRET_ID/KEY`, poi in *Integrazioni* scegli la banca e dai il consenso: il redirect torna su `/api/bank/callback`. Il consenso dura 180 giorni; le banche limitano le letture a poche al giorno, quindi i movimenti si aggiornano a ogni sync (non al secondo). Se il provider non è disponibile per il vostro account, usate l'import CSV in *Finanza*: le righe già importate vengono saltate. Il client è isolato in `src/lib/integrations/gocardless.ts` per poterlo sostituire con un altro aggregatore (es. Enable Banking, Salt Edge).
 
 **Google Drive + GA4.** Crea un service account su Google Cloud, abilita *Drive API* e *Google Analytics Data API*, condividi con la sua email la cartella clienti (lettura) e aggiungilo come *Visualizzatore* nella proprietà GA4. Imposta `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` (con `\n` letterali), `GOOGLE_DRIVE_FOLDER_ID`, `GA4_PROPERTY_ID`.
 
-**Instagram.** Account Business/Creator collegato a una Pagina Facebook; token di lunga durata con `instagram_basic`, `instagram_manage_insights`, `pages_read_engagement`. Imposta `INSTAGRAM_USER_ID` e `INSTAGRAM_ACCESS_TOKEN`.
+**Instagram.** Account professionale (Business o Creator). Con *Instagram API with Instagram Login* basta `INSTAGRAM_ACCESS_TOKEN` (inizia con `IG`, l'hub lo rinnova da solo); con il login Facebook servono anche `INSTAGRAM_USER_ID` e una Pagina collegata. Dettagli in [PREPARAZIONE.md](PREPARAZIONE.md).
 
-**TikTok.** App su TikTok for Developers con scope `user.info.stats` e `video.list`; esegui una volta il login OAuth per ottenere il refresh token e impostalo in `TIKTOK_REFRESH_TOKEN` (poi l'hub lo rinnova da solo). Le metriche giornaliere sono differenze tra istantanee consecutive, quindi partono dal secondo giorno.
+**TikTok.** App su TikTok for Developers (Login Kit + scope `user.info.basic`, `user.info.stats`, `video.list`), redirect URI `APP_URL/api/tiktok/callback`; imposta `TIKTOK_CLIENT_KEY/SECRET` e premi *Collega account TikTok* in Integrazioni. Le metriche giornaliere sono differenze tra istantanee consecutive, quindi partono dal secondo giorno.
 
 **Candidature dal sito.** Dal backend del form (non dal browser, per non esporre il segreto):
 

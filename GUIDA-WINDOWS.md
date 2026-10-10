@@ -1,6 +1,6 @@
 # Installare l'hub su Windows (costo zero)
 
-Servono: il PC dello studio che resta acceso, circa 20 minuti, una connessione internet.
+Servono: il PC dello studio che resta acceso, circa 20 minuti, una connessione internet e i valori raccolti seguendo **[PREPARAZIONE.md](PREPARAZIONE.md)**.
 
 ## 1 · Scaricare il progetto
 
@@ -26,6 +26,21 @@ Servono: il PC dello studio che resta acceso, circa 20 minuti, una connessione i
 4. Alla fine si apre il browser su `http://localhost:3000`: accedi.
 
 L'hub ora parte da solo a ogni accensione del PC (finestra "Backrooms Hub" ridotta a icona: **non chiuderla**).
+
+## 2b · Inserire le chiavi dei servizi
+
+1. Apri `C:\BackroomsHub\.env.local` con Blocco note (tasto destro → Apri con → Blocco note).
+2. Compila le righe con i valori raccolti in PREPARAZIONE.md, ad esempio:
+   ```
+   GOOGLE_SERVICE_ACCOUNT_EMAIL=hub-reader@backrooms-hub.iam.gserviceaccount.com
+   GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----\n"
+   GOOGLE_DRIVE_FOLDER_ID=1AbC...
+   GA4_PROPERTY_ID=412345678
+   INSTAGRAM_ACCESS_TOKEN=IGAA...
+   ```
+   La chiave privata va **tra virgolette** e su una sola riga, come appare nel file JSON.
+3. Salva, chiudi la finestra "Backrooms Hub" e riaprila (o riavvia il PC).
+4. Nell'hub apri **Integrazioni** → *Esegui sincronizzazione completa*: ogni sorgente mostra "Configurato" e l'esito dell'ultimo sync.
 
 ## 3 · Tenere il PC sempre acceso
 

@@ -7,6 +7,45 @@ const BASE = "https://open.tiktokapis.com/v2";
 
 type Tokens = { access: string; expiresAt: number; refresh: string };
 
+export function tiktokAppConfigured() {
+  return Boolean(process.env.TIKTOK_CLIENT_KEY && process.env.TIKTOK_CLIENT_SECRET);
+}
+
+export function tiktokRedirectUri() {
+  return `${process.env.APP_URL ?? "http://localhost:3000"}/api/tiktok/callback`;
+}
+
+export function tiktokAuthorizeUrl(state: string) {
+  return `https://www.tiktok.com/v2/auth/authorize/?${new URLSearchParams({
+    client_key: process.env.TIKTOK_CLIENT_KEY ?? "",
+    scope: "user.info.basic,user.info.stats,video.list",
+    response_type: "code",
+    redirect_uri: tiktokRedirectUri(),
+    state,
+  })}`;
+}
+
+/** Exchanges the OAuth code from the consent screen for access + refresh tokens. */
+export async function tiktokExchangeCode(code: string) {
+  const res = await fetchJson<{ access_token?: string; expires_in: number; refresh_token: string; error_description?: string }>(
+    `${BASE}/oauth/token/`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_key: process.env.TIKTOK_CLIENT_KEY ?? "",
+        client_secret: process.env.TIKTOK_CLIENT_SECRET ?? "",
+        code,
+        grant_type: "authorization_code",
+        redirect_uri: tiktokRedirectUri(),
+      }),
+    },
+    "TikTok OAuth",
+  );
+  if (!res.access_token) throw new IntegrationError(`TikTok: ${res.error_description ?? "autorizzazione non riuscita"}`);
+  kvSet("tiktok.tokens", { access: res.access_token, expiresAt: Date.now() + res.expires_in * 1000, refresh: res.refresh_token });
+}
+
 export function tiktokConfigured() {
   return Boolean(
     process.env.TIKTOK_CLIENT_KEY && process.env.TIKTOK_CLIENT_SECRET && (kvGet<Tokens>("tiktok.tokens") || process.env.TIKTOK_REFRESH_TOKEN),

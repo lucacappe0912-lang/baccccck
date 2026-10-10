@@ -4,7 +4,7 @@ import { fmtDate } from "@/lib/format";
 import { bankConfigured, currentBankLink, listInstitutions } from "@/lib/integrations/gocardless";
 import { googleConfigured } from "@/lib/integrations/google";
 import { instagramConfigured } from "@/lib/integrations/instagram";
-import { tiktokConfigured } from "@/lib/integrations/tiktok";
+import { tiktokAppConfigured, tiktokConfigured, tiktokRedirectUri } from "@/lib/integrations/tiktok";
 import { lastDailyRun } from "@/lib/sync";
 import { Card, PageHead } from "@/components/ui";
 import { ActionButton } from "@/components/ActionForm";
@@ -24,7 +24,7 @@ function SyncLine({ job }: { job: string }) {
   return <div className={`xs ${s.ok ? "faint" : "delta-down"}`}>Ultimo sync {fmtDate(s.at)} — {s.message}</div>;
 }
 
-export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ bank?: string; msg?: string }> }) {
+export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ bank?: string; tiktok?: string; msg?: string }> }) {
   await requireSession();
   const sp = await searchParams;
   const bank = currentBankLink();
@@ -53,6 +53,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
 
       {sp.bank === "ok" && <div className="notice good" style={{ marginBottom: 16 }}>Conto collegato e movimenti sincronizzati.</div>}
       {sp.bank === "sync-error" && <div className="notice warn" style={{ marginBottom: 16 }}>Conto collegato, ma la prima sincronizzazione non è riuscita: riprova da Finanza.</div>}
+      {sp.tiktok === "ok" && <div className="notice good" style={{ marginBottom: 16 }}>Account TikTok collegato: la prima istantanea è salvata.</div>}
+      {sp.tiktok === "error" && <div className="notice critical" style={{ marginBottom: 16 }}>Collegamento TikTok non riuscito{sp.msg ? `: ${sp.msg}` : "."}</div>}
       {sp.bank === "error" && <div className="notice critical" style={{ marginBottom: 16 }}>Collegamento non riuscito: {sp.msg}</div>}
 
       <div className="grid cols-2">
@@ -83,7 +85,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               </form>
             )
           ) : (
-            <div className="small faint">Imposta <code>GOCARDLESS_SECRET_ID</code> e <code>GOCARDLESS_SECRET_KEY</code>. In alternativa puoi importare l&apos;estratto conto CSV da Finanza.</div>
+            <div className="small faint">Nessun provider bancario configurato: GoCardless non accetta più nuove iscrizioni. Importa l&apos;estratto conto CSV da <a href="/finanza" style={{ textDecoration: "underline" }}>Finanza</a> (i movimenti già presenti vengono saltati).</div>
           )}
         </Card>
 
@@ -101,6 +103,16 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
 
         <Card title="TikTok" actions={<Status on={tiktokConfigured()} />}>
           <p className="small muted" style={{ marginTop: -6 }}>Display API v2: follower e totali dei video. I valori giornalieri sono calcolati come differenza tra due istantanee consecutive.</p>
+          {tiktokAppConfigured() ? (
+            <div className="stack small">
+              <a className="btn btn-chrome" href="/api/tiktok/connect" style={{ alignSelf: "flex-start" }}>
+                {tiktokConfigured() ? "Ricollega account TikTok" : "Collega account TikTok"}
+              </a>
+              <div className="xs faint">Redirect URI da registrare nell&apos;app TikTok: <code>{tiktokRedirectUri()}</code></div>
+            </div>
+          ) : (
+            <div className="small faint">Imposta <code>TIKTOK_CLIENT_KEY</code> e <code>TIKTOK_CLIENT_SECRET</code>.</div>
+          )}
           <SyncLine job="tiktok" />
         </Card>
 
